@@ -32,10 +32,27 @@
 
 ## Debug (if applicable)
 - Symptoms:
+  - HTML debt table first row intermittently appeared blank in "Finding" column.
+  - Full absolute file paths made the debt table hard to scan in large org repos.
+  - Selecting metadata types did not automatically select related component names.
+  - Large org runs appeared "limited" because only top 10 debts were retained in pipeline.
 - Hypotheses (5+):
+  - Finding IDs can be missing/empty in some scanner-normalized rows.
+  - UI and HTML renderer lacked fallback display for empty IDs.
+  - Paths are rendered directly from scanner output without compaction.
+  - Analyze command truncated ranked debts too early (`slice(0, 10)`).
+  - Type-checkbox events were only filtering visibility, not propagating selection state.
 - Root cause:
+  - Combined UX + logic constraints: strict top-10 truncation, verbose path rendering, and no type-to-component auto-select synchronization.
 - Fix:
+  - Keep full ranked debt list in `analyze` and render top 50 in HTML with total count context.
+  - Compact displayed paths to trailing segments (`.../a/b/c/file`) for readability.
+  - Add fallback finding ID (`finding-N`) if source ID is empty.
+  - Auto-select/deselect component names when component type toggles change in UI.
+  - Improve debt table visual hierarchy (table wrapper + alternating rows + clearer path styling).
 - Verify:
+  - Build/lint/test locally after patch.
+  - Run UI against large repo path and validate count, row IDs, auto-selection behavior, and compact paths.
 - Governor Limits Check:
 
 ## Decisions / Links

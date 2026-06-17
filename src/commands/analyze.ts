@@ -125,7 +125,7 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
     const linkedNode = graph.nodes.find((node) => finding.filePath.endsWith(path.basename(node.path)));
     findingBlastRadius.set(finding.id, linkedNode ? nodeBlastRadius.get(linkedNode.id) ?? 0 : 0);
   }
-  const topDebts = rankDebts(activeFindings, findingBlastRadius, config).slice(0, 10);
+  const topDebts = rankDebts(activeFindings, findingBlastRadius, config);
 
   let recommendations = await generateRecommendations(activeFindings, topDebts, config, options.provider);
   if (recommendations.length === 0 && topDebts.length > 0) {

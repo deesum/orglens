@@ -54,16 +54,8 @@ function htmlPage(defaults: UiOptions): string {
           <label>Project Path (required)</label>
           <input id="repo" />
         </div>
-        <div>
-          <label>Package.xml Path (optional)</label>
-          <input id="pkg" />
-        </div>
-        <div>
-          <label>Target Org Alias (optional)</label>
-          <input id="org" />
-        </div>
       </div>
-      <p class="small">Why optional? This tool scans local metadata files. package.xml narrows scope; org alias is for future retrieve integrations.</p>
+      <p class="small">Minimal input: only project path. App auto-discovers metadata roots and components.</p>
     </section>
 
     <section class="card">
@@ -72,8 +64,17 @@ function htmlPage(defaults: UiOptions): string {
           <label>Component Types</label>
           <div class="row">
             <label><input type="checkbox" class="type" value="ApexClass" checked /> ApexClass</label>
+            <label><input type="checkbox" class="type" value="ApexTrigger" checked /> ApexTrigger</label>
             <label><input type="checkbox" class="type" value="LightningComponentBundle" checked /> LWC</label>
+            <label><input type="checkbox" class="type" value="AuraDefinitionBundle" checked /> Aura</label>
             <label><input type="checkbox" class="type" value="Flow" checked /> Flow</label>
+            <label><input type="checkbox" class="type" value="CustomObject" checked /> CustomObject</label>
+            <label><input type="checkbox" class="type" value="CustomField" checked /> CustomField</label>
+            <label><input type="checkbox" class="type" value="PermissionSet" checked /> PermissionSet</label>
+            <label><input type="checkbox" class="type" value="FlexiPage" checked /> FlexiPage</label>
+            <label><input type="checkbox" class="type" value="CustomLabel" checked /> CustomLabel</label>
+            <label><input type="checkbox" class="type" value="StaticResource" checked /> StaticResource</label>
+            <label><input type="checkbox" class="type" value="VisualforcePage" checked /> VisualforcePage</label>
           </div>
           <div class="row" style="margin-top:8px">
             <button id="selectAllTypes" type="button">Select All Types</button>
@@ -89,6 +90,8 @@ function htmlPage(defaults: UiOptions): string {
           </div>
           <p id="componentStats" class="small"></p>
           <div id="components" class="scroll"></div>
+          <p class="small" style="margin-top:6px">Selected components:</p>
+          <div id="selectedComponents" class="scroll" style="max-height:120px"></div>
         </div>
       </div>
       <div style="margin-top:10px">
@@ -106,6 +109,8 @@ function htmlPage(defaults: UiOptions): string {
       <details style="margin-top:12px">
         <summary>Advanced options</summary>
         <div class="grid" style="margin-top:10px">
+          <div><label>Package.xml Path (optional)</label><input id="pkg" /></div>
+          <div><label>Target Org Alias (optional)</label><input id="org" /></div>
           <div><label>Team</label><input id="team" value="Architecture" /></div>
           <div><label>Release Train</label><input id="release" value="R1" /></div>
           <div><label>Backlog CSV Output Path (optional)</label><input id="backlogOut" /></div>
@@ -135,6 +140,7 @@ function htmlPage(defaults: UiOptions): string {
     const componentContainer = document.getElementById("components");
     const componentSearch = document.getElementById("componentSearch");
     const componentStats = document.getElementById("componentStats");
+    const selectedComponents = document.getElementById("selectedComponents");
     const status = document.getElementById("status");
     const frame = document.getElementById("reportFrame");
     const modeSelect = document.getElementById("mode");
@@ -150,6 +156,12 @@ function htmlPage(defaults: UiOptions): string {
       const visible = [...componentContainer.querySelectorAll("label")].filter(el => el.style.display !== "none").length;
       const selected = [...document.querySelectorAll(".component:checked")].length;
       componentStats.textContent = "Loaded: " + all + " | Visible: " + visible + " | Selected: " + selected;
+      const selectedNames = [...document.querySelectorAll(".component:checked")]
+        .map((el) => el.value)
+        .sort((a, b) => a.localeCompare(b));
+      selectedComponents.innerHTML = selectedNames.length
+        ? selectedNames.map((name) => '<div>'+name+'</div>').join("")
+        : '<div class="small">No components selected (broad scan by selected types).</div>';
     }
 
     function applyComponentFilter() {
@@ -160,6 +172,17 @@ function htmlPage(defaults: UiOptions): string {
         const type = labelEl.getAttribute("data-type");
         const show = (!q || text.includes(q)) && typeChecked.has(type);
         labelEl.style.display = show ? "" : "none";
+      });
+      updateComponentStats();
+    }
+
+    function syncComponentSelectionToTypes() {
+      const typeChecked = new Set([...document.querySelectorAll(".type:checked")].map(e => e.value));
+      componentContainer.querySelectorAll("label").forEach((labelEl) => {
+        const type = labelEl.getAttribute("data-type");
+        const checkbox = labelEl.querySelector("input");
+        if (!checkbox) return;
+        checkbox.checked = typeChecked.has(type);
       });
       updateComponentStats();
     }
@@ -178,7 +201,7 @@ function htmlPage(defaults: UiOptions): string {
         (acc[c.type] = acc[c.type] || []).push(c);
         return acc;
       }, {});
-      const typeOrder = ["ApexClass","LightningComponentBundle","Flow","Unknown"];
+      const typeOrder = ["ApexClass","ApexTrigger","LightningComponentBundle","AuraDefinitionBundle","Flow","CustomObject","CustomField","PermissionSet","FlexiPage","CustomLabel","StaticResource","VisualforcePage","Unknown"];
       componentContainer.innerHTML = typeOrder
         .filter(t => grouped[t]?.length)
         .map(t => '<div style="margin-bottom:8px"><strong>'+t+'</strong><div>' + grouped[t].map(c =>
@@ -186,11 +209,15 @@ function htmlPage(defaults: UiOptions): string {
         ).join("") + '</div></div>')
         .join("");
       componentContainer.querySelectorAll(".component").forEach(cb => cb.addEventListener("change", updateComponentStats));
+      syncComponentSelectionToTypes();
       applyComponentFilter();
       status.textContent = "Components loaded.";
     }
 
     async function runScan() {
+      const runBtn = document.getElementById("run");
+      runBtn.disabled = true;
+      runBtn.textContent = "Running...";
       status.textContent = "Running scanner...";
       const typeValues = [...document.querySelectorAll(".type:checked")].map(e => e.value);
       const componentValues = [...document.querySelectorAll(".component:checked")].map(e => e.value);
@@ -208,18 +235,28 @@ function htmlPage(defaults: UiOptions): string {
         componentTypes: typeValues,
         components: componentValues
       };
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) { status.textContent = data.error || "Scan failed"; return; }
-      status.textContent = "Done. " + data.message;
-      if (data.reportPath.endsWith(".html")) {
-        frame.src = "/api/report?path=" + encodeURIComponent(data.reportPath);
-      } else {
-        frame.srcdoc = "<pre style='white-space:pre-wrap;padding:10px'>" + JSON.stringify(data.result, null, 2) + "</pre>";
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          status.textContent = data.error || "Scan failed";
+          return;
+        }
+        status.textContent = "Done. " + data.message + " (report: " + data.reportPath + ")";
+        if (data.reportPath.endsWith(".html")) {
+          frame.src = "/api/report?path=" + encodeURIComponent(data.reportPath);
+        } else {
+          frame.srcdoc = "<pre style='white-space:pre-wrap;padding:10px'>" + JSON.stringify(data.result, null, 2) + "</pre>";
+        }
+      } catch (e) {
+        status.textContent = "Scan request failed: " + e;
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = "Run Scanner";
       }
     }
 
@@ -229,10 +266,12 @@ function htmlPage(defaults: UiOptions): string {
 
     document.getElementById("selectAllTypes").addEventListener("click", () => {
       setAll(".type", true);
+      syncComponentSelectionToTypes();
       applyComponentFilter();
     });
     document.getElementById("clearAllTypes").addEventListener("click", () => {
       setAll(".type", false);
+      syncComponentSelectionToTypes();
       applyComponentFilter();
     });
     document.getElementById("selectAllComponents").addEventListener("click", () => {
@@ -246,7 +285,10 @@ function htmlPage(defaults: UiOptions): string {
       updateComponentStats();
     });
     componentSearch.addEventListener("input", applyComponentFilter);
-    document.querySelectorAll(".type").forEach(cb => cb.addEventListener("change", applyComponentFilter));
+    document.querySelectorAll(".type").forEach(cb => cb.addEventListener("change", () => {
+      syncComponentSelectionToTypes();
+      applyComponentFilter();
+    }));
 
     modeSelect.addEventListener("change", () => {
       const isCi = modeSelect.value === "ci";

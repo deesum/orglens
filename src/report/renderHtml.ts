@@ -9,6 +9,13 @@ function escapeHtml(input: string): string {
     .replaceAll('"', "&quot;");
 }
 
+function compactPath(filePath: string): string {
+  const normalized = filePath.replaceAll("\\", "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length <= 4) return normalized;
+  return `.../${parts.slice(-4).join("/")}`;
+}
+
 export function renderHtml(result: AnalysisResult): string {
   const findingsById = new Map(result.findings.map((f) => [f.id, f]));
   const ruleSummaryMap = new Map<string, { count: number; severity: string; files: Set<string> }>();
@@ -42,22 +49,26 @@ export function renderHtml(result: AnalysisResult): string {
     )
     .join("");
 
+  const maxDebtRows = 50;
   const debtRows = result.topDebts
-    .slice(0, 10)
-    .map((d) => {
+    .slice(0, maxDebtRows)
+    .map((d, index) => {
       const finding = findingsById.get(d.findingId);
-      const where = finding ? `${finding.filePath}${finding.line ? `:${finding.line}` : ""}` : "unknown";
+      const where = finding
+        ? `${compactPath(finding.filePath)}${finding.line ? `:${finding.line}` : ""}`
+        : "unknown";
       const what = finding ? `${finding.ruleName} - ${finding.message}` : d.findingId;
       const why = finding
         ? `${finding.severity.toUpperCase()} severity in ${finding.category} with blast radius ${d.blastRadius}.`
         : d.fixNowReason;
       const fix = finding ? recommendedFixForFinding(finding) : "Review finding details and apply rule guidance.";
+      const findingId = d.findingId?.trim() ? d.findingId : `finding-${index + 1}`;
       return `<tr>
-        <td>${escapeHtml(d.findingId)}</td>
+        <td>${escapeHtml(findingId)}</td>
         <td>${d.priorityScore}</td>
         <td>${d.effort}</td>
         <td>${escapeHtml(what)}</td>
-        <td>${escapeHtml(where)}</td>
+        <td class="path-col">${escapeHtml(where)}</td>
         <td>${escapeHtml(why)}</td>
         <td>${escapeHtml(fix)}</td>
       </tr>`;
@@ -179,7 +190,8 @@ export function renderHtml(result: AnalysisResult): string {
       font-size: 13px;
     }
     th { background: #17244a; position: sticky; top: 54px; z-index: 1; cursor: pointer; }
-    tr:hover td { background: rgba(96,165,250,0.08); }
+    tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    tr:hover td { background: rgba(96,165,250,0.10); }
     .recommendation p { margin: 6px 0; font-size: 13px; }
     details {
       border: 1px solid var(--border);
@@ -190,6 +202,16 @@ export function renderHtml(result: AnalysisResult): string {
     }
     summary { cursor: pointer; font-weight: 600; }
     .small { font-size: 12px; color: var(--muted); white-space: pre-wrap; }
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: auto;
+      background: #0f1833;
+    }
+    td.path-col {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #bfdbfe;
+    }
   </style>
 </head>
 <body>
@@ -229,6 +251,7 @@ export function renderHtml(result: AnalysisResult): string {
 
     <section id="debts">
       <h2>Top Debt Items</h2>
+      <p class="small">Showing top ${Math.min(result.topDebts.length, maxDebtRows)} of ${result.topDebts.length} prioritized findings.</p>
       <div class="controls">
         <input id="debtSearch" placeholder="Search finding, rule, file..." />
         <select id="effortFilter">
@@ -238,15 +261,17 @@ export function renderHtml(result: AnalysisResult): string {
           <option value="L">L</option>
         </select>
       </div>
-      <table id="debtTable">
-        <thead>
-          <tr>
-            <th data-sort="0">Finding</th><th data-sort="1">Priority</th><th data-sort="2">Effort</th>
-            <th data-sort="3">What</th><th data-sort="4">Where</th><th data-sort="5">Why</th><th data-sort="6">How To Fix</th>
-          </tr>
-        </thead>
-        <tbody>${debtRows}</tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="debtTable">
+          <thead>
+            <tr>
+              <th data-sort="0">Finding</th><th data-sort="1">Priority</th><th data-sort="2">Effort</th>
+              <th data-sort="3">What</th><th data-sort="4">Where</th><th data-sort="5">Why</th><th data-sort="6">How To Fix</th>
+            </tr>
+          </thead>
+          <tbody>${debtRows}</tbody>
+        </table>
+      </div>
     </section>
 
     <section id="recommendations">
