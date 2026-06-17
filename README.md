@@ -2,6 +2,42 @@
 
 CLI for analyzing Salesforce metadata health, ranking debt priorities, and generating evidence-linked recommendations.
 
+## Dependencies
+
+Required:
+
+- Node.js 20+
+- Salesforce CLI (`sf`)
+- Salesforce Code Analyzer plugin (`@salesforce/sfdx-scanner`)
+- Java Runtime (JDK 17 recommended)
+
+Optional (for recommendation generation):
+
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+
+### Install dependencies
+
+```bash
+# Salesforce scanner plugin
+sf plugins install @salesforce/sfdx-scanner
+
+# Java (macOS/Homebrew)
+brew install openjdk@17
+sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+echo 'export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Verify dependencies
+
+```bash
+node -v
+sf --version
+sf plugins | rg sfdx-scanner
+java -version
+```
+
 ## Installation
 
 ```bash
@@ -15,6 +51,10 @@ Global install (when published):
 ```bash
 npm i -g config-reverse-engineer
 ```
+
+Quickstart for your org alias (`fslspecialedition`):
+
+- `docs/quickstart.md`
 
 ## Usage Modes
 

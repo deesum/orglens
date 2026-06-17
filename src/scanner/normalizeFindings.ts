@@ -1,6 +1,7 @@
 import { AnalyzerFinding, MetadataType, Severity } from "../types/models.js";
 
 interface RawFinding {
+  ruleName?: string;
   rule?: string;
   message?: string;
   severity?: number | string;
@@ -11,9 +12,10 @@ interface RawFinding {
 
 function normalizeSeverity(value: number | string | undefined): Severity {
   if (typeof value === "number") {
-    if (value >= 4) return "critical";
-    if (value >= 3) return "high";
-    if (value >= 2) return "medium";
+    // PMD uses 1..5 where 1 is highest priority.
+    if (value <= 1) return "critical";
+    if (value === 2) return "high";
+    if (value === 3) return "medium";
     return "low";
   }
 
@@ -31,18 +33,37 @@ function inferMetadataType(filePath: string): MetadataType {
   return "Unknown";
 }
 
+function inferComponentName(filePath: string, metadataType: MetadataType): string | undefined {
+  if (metadataType === "ApexClass") {
+    return filePath.split("/").pop()?.replace(/\.cls$/, "");
+  }
+  if (metadataType === "Flow") {
+    return filePath.split("/").pop()?.replace(/\.flow-meta\.xml$/, "");
+  }
+  if (metadataType === "LightningComponentBundle") {
+    const parts = filePath.split("/");
+    const lwcIndex = parts.lastIndexOf("lwc");
+    if (lwcIndex >= 0 && parts[lwcIndex + 1]) {
+      return parts[lwcIndex + 1];
+    }
+  }
+  return undefined;
+}
+
 export function normalizeFindings(rawFindings: RawFinding[]): AnalyzerFinding[] {
   return rawFindings.map((f, index) => {
     const filePath = f.fileName ?? "unknown";
+    const metadataType = inferMetadataType(filePath);
     return {
       id: `finding-${index + 1}`,
-      ruleName: f.rule ?? "UnknownRule",
+      ruleName: f.ruleName ?? f.rule ?? "UnknownRule",
       message: f.message ?? "No message provided",
       severity: normalizeSeverity(f.severity),
       category: f.category ?? "maintainability",
       filePath,
+      componentName: inferComponentName(filePath, metadataType),
       line: f.line,
-      metadataType: inferMetadataType(filePath),
+      metadataType,
       references: [],
     };
   });

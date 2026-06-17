@@ -3,11 +3,19 @@ import path from "node:path";
 
 export function walkFiles(rootPath: string, extensions: string[]): string[] {
   const out: string[] = [];
+  const ignoredDirectories = new Set([
+    ".git",
+    ".sfdx",
+    ".sf",
+    "node_modules",
+    "dist",
+    ".cre-snapshots",
+  ]);
 
   function visit(current: string): void {
     const entries = fs.readdirSync(current, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".git") || entry.name === "node_modules") {
+      if (ignoredDirectories.has(entry.name)) {
         continue;
       }
       const fullPath = path.join(current, entry.name);

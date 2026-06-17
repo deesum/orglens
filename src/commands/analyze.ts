@@ -9,6 +9,7 @@ import { writeGovernanceSnapshot } from "../modes/governanceSnapshot.js";
 import { parseApex } from "../parser/apexParser.js";
 import { parseFlows } from "../parser/flowParser.js";
 import { parseLwc } from "../parser/lwcParser.js";
+import { filterFindingsByPackage, filterNodesByPackage } from "../parser/packageXmlScope.js";
 import { rankDebts } from "../ranking/priorityRanker.js";
 import { renderHtml } from "../report/renderHtml.js";
 import { renderJson } from "../report/renderJson.js";
@@ -30,15 +31,42 @@ function toFormat(result: AnalysisResult, format: OutputFormat): string {
   return renderJson(result);
 }
 
+function buildFallbackRecommendations(result: {
+  topDebts: AnalysisResult["topDebts"];
+  findings: AnalysisResult["findings"];
+}): AnalysisResult["recommendations"] {
+  const findingsById = new Map(result.findings.map((f) => [f.id, f]));
+  return result.topDebts.slice(0, 5).map((debt) => {
+    const finding = findingsById.get(debt.findingId);
+    return {
+      title: finding ? `Fix ${finding.ruleName}` : `Fix ${debt.findingId}`,
+      rationale: finding
+        ? `${finding.severity.toUpperCase()} issue in ${finding.category}: ${finding.message}`
+        : debt.fixNowReason,
+      impactedArtifacts: finding ? [finding.filePath] : [],
+      evidenceFindingIds: [debt.findingId],
+      effort: debt.effort,
+      deferredRisk: finding
+        ? `Continued ${finding.category} debt can increase maintenance and reliability risk.`
+        : "Deferred debt may degrade quality over time.",
+    };
+  });
+}
+
 export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   const repoPath = path.resolve(options.repo);
+  const packagePath = options.packagePath ? path.resolve(options.packagePath) : undefined;
   const config = loadConfig(options.configPath);
   if (options.provider) {
     config.llm.provider = options.provider;
   }
 
-  const scannerFindings = runCodeAnalyzer(repoPath);
-  const parsedNodes = [...parseApex(repoPath), ...parseLwc(repoPath), ...parseFlows(repoPath)];
+  const scannerRun = runCodeAnalyzer(repoPath);
+  const parsedNodes = filterNodesByPackage(
+    [...parseApex(repoPath), ...parseLwc(repoPath), ...parseFlows(repoPath)],
+    packagePath,
+  );
+  const scannerFindings = filterFindingsByPackage(scannerRun.findings, parsedNodes, packagePath);
   const graph = buildDependencyGraph(parsedNodes);
   const { activeFindings } = applySuppressions(scannerFindings, config);
   const confidence = computeConfidence(activeFindings, graph);
@@ -52,13 +80,18 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   }
   const topDebts = rankDebts(activeFindings, findingBlastRadius, config).slice(0, 10);
 
-  const recommendations = await generateRecommendations(activeFindings, topDebts, config, options.provider);
+  let recommendations = await generateRecommendations(activeFindings, topDebts, config, options.provider);
+  if (recommendations.length === 0 && topDebts.length > 0) {
+    recommendations = buildFallbackRecommendations({ topDebts, findings: activeFindings });
+  }
   const result: AnalysisResult = {
     score,
     topDebts,
     graph,
     findings: activeFindings,
     recommendations,
+    scannerStatus: scannerRun.status,
+    scannerMessage: scannerRun.message,
     timestamp: new Date().toISOString(),
   };
 

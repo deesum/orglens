@@ -10,6 +10,7 @@ export interface AnalyzerFinding {
   severity: Severity;
   category: string;
   filePath: string;
+  componentName?: string;
   line?: number;
   metadataType: MetadataType;
   references: string[];
@@ -65,6 +66,8 @@ export interface AnalysisResult {
   graph: DependencyGraph;
   findings: AnalyzerFinding[];
   recommendations: Recommendation[];
+  scannerStatus: "ok" | "failed" | "not_run";
+  scannerMessage?: string;
   timestamp: string;
 }
 
