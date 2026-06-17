@@ -1,6 +1,7 @@
 .sf/
 .sfdx/
 node_modules/
+dist/
 coverage/
 .env
 .env.*
@@ -8,3 +9,5 @@ coverage/
 *.key
 *.crt
 .DS_Store
+.cre-snapshots/
+.cre-sample-report.json

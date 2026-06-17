@@ -1,0 +1,30 @@
+scoring:
+  weights:
+    security: 0.3
+    maintainability: 0.25
+    reliability: 0.2
+    performance: 0.15
+    operability: 0.1
+  severityPoints:
+    critical: 25
+    high: 15
+    medium: 8
+    low: 3
+  ciGate:
+    failBelow: 70
+    warnBelow: 80
+priority:
+  blastRadiusWeight: 0.5
+  severityWeight: 0.35
+  effortWeight: 0.15
+suppression:
+  rules: []
+llm:
+  enabled: true
+  provider: openai
+  openaiModel: gpt-4.1-mini
+  anthropicModel: claude-3-5-sonnet-latest
+  maxRecommendations: 10
+  redactionEnabled: true
+governance:
+  snapshotDir: .cre-snapshots
