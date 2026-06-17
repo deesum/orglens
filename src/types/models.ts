@@ -1,5 +1,18 @@
 export type Severity = "critical" | "high" | "medium" | "low";
-export type MetadataType = "ApexClass" | "LightningComponentBundle" | "Flow" | "Unknown";
+export type MetadataType =
+  | "ApexClass"
+  | "ApexTrigger"
+  | "LightningComponentBundle"
+  | "AuraDefinitionBundle"
+  | "Flow"
+  | "CustomObject"
+  | "CustomField"
+  | "PermissionSet"
+  | "FlexiPage"
+  | "CustomLabel"
+  | "StaticResource"
+  | "VisualforcePage"
+  | "Unknown";
 export type OutputFormat = "json" | "md" | "html";
 export type RunMode = "local" | "ci" | "governance";
 
@@ -119,6 +132,6 @@ export interface AnalyzeOptions {
   team?: string;
   releaseTrain?: string;
   backlogOut?: string;
-  componentTypes?: MetadataType[];
+  componentTypes?: string[];
   components?: string[];
 }

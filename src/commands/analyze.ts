@@ -10,6 +10,7 @@ import { computeTrendDelta } from "../modes/trendDelta.js";
 import { parseApex } from "../parser/apexParser.js";
 import { parseFlows } from "../parser/flowParser.js";
 import { parseLwc } from "../parser/lwcParser.js";
+import { parseMetadataCatalog } from "../parser/metadataCatalogParser.js";
 import { filterFindingsByPackage, filterNodesByPackage } from "../parser/packageXmlScope.js";
 import { rankDebts } from "../ranking/priorityRanker.js";
 import { renderHtml } from "../report/renderHtml.js";
@@ -22,6 +23,7 @@ import { computeConfidence } from "../scoring/confidence.js";
 import { computeScore } from "../scoring/scoreModel.js";
 import { runCodeAnalyzer } from "../scanner/codeAnalyzerRunner.js";
 import { AnalysisResult, AnalyzeOptions, OutputFormat } from "../types/models.js";
+import { detectMetadataRoots } from "../utils/scanRoots.js";
 
 function resolveOutputPath(repoPath: string, requested?: string, format: OutputFormat = "json"): string {
   if (requested) return path.resolve(requested);
@@ -97,10 +99,14 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   }
 
   const scannerRun = runCodeAnalyzer(repoPath);
-  const packageScopedNodes = filterNodesByPackage(
-    [...parseApex(repoPath), ...parseLwc(repoPath), ...parseFlows(repoPath)],
-    packagePath,
-  );
+  const roots = detectMetadataRoots(repoPath);
+  const discoveredNodes = roots.flatMap((root) => {
+    const core = [...parseApex(root), ...parseLwc(root), ...parseFlows(root)];
+    const catalog = parseMetadataCatalog(root);
+    return [...core, ...catalog];
+  });
+  const dedup = new Map(discoveredNodes.map((n) => [`${n.type}:${n.name}`, n]));
+  const packageScopedNodes = filterNodesByPackage([...dedup.values()], packagePath);
   const packageScopedFindings = filterFindingsByPackage(scannerRun.findings, packageScopedNodes, packagePath);
   const { nodes: parsedNodes, findings: scannerFindings } = filterByComponentSelection(
     packageScopedNodes,

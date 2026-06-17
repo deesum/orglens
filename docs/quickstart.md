@@ -56,6 +56,12 @@ Output file defaults to:
 
 - `cre-report.html`
 
+Minimal run (no package, no org alias):
+
+```bash
+cre-agent analyze --repo . --format html --mode local
+```
+
 ## 5) Run CI gate mode (PR threshold enforcement)
 
 ```bash
@@ -101,6 +107,14 @@ cre-agent analyze --repo . --target-org fslspecialedition --format md --provider
 3. Review top 10 debt findings with fix-now rationale.
 4. Review recommendations and verify evidence finding IDs.
 5. Export JSON/MD for backlog and governance tracking.
+
+## 10) Browser UI (minimal input)
+
+```bash
+cre-agent ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --port 4173
+```
+
+Then open `http://127.0.0.1:4173`, load components, choose scope, and run.
 
 ## 9) Export Jira-ready backlog
 

@@ -60,7 +60,7 @@ program
 program
   .command("ui")
   .description("Launch local web UI for scoped scanner runs")
-  .requiredOption("--repo <path>", "Repository root path")
+  .option("--repo <path>", "Repository root path", process.cwd())
   .option("--package <path>", "Path to package.xml")
   .option("--target-org <alias>", "Salesforce org alias")
   .option("--port <number>", "UI server port", "4173")

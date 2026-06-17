@@ -99,6 +99,20 @@ In the UI you can:
 - choose component types (Apex/LWC/Flow)
 - optionally select specific component names
 - run scanner and preview report directly
+- switch between local / ci / governance modes
+- set CI threshold, provider, and backlog export options in Advanced settings
+
+### Supported component types
+
+- `ApexClass`
+- `LightningComponentBundle` (LWC)
+- `Flow`
+
+### Why package.xml and target org alias are optional
+
+- `package.xml` is only used to narrow scan scope to specific metadata members.
+- `target-org` is optional for now; current analyzer operates on local metadata files.
+- Minimal input required is just `--repo` (or repo field in UI).
 
 ## What You Receive
 

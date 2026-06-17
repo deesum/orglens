@@ -7,8 +7,17 @@ interface PackageScope {
 
 const metadataTypeToManifestType: Record<MetadataType, string> = {
   ApexClass: "ApexClass",
+  ApexTrigger: "ApexTrigger",
   LightningComponentBundle: "LightningComponentBundle",
+  AuraDefinitionBundle: "AuraDefinitionBundle",
   Flow: "Flow",
+  CustomObject: "CustomObject",
+  CustomField: "CustomField",
+  PermissionSet: "PermissionSet",
+  FlexiPage: "FlexiPage",
+  CustomLabel: "CustomLabels",
+  StaticResource: "StaticResource",
+  VisualforcePage: "ApexPage",
   Unknown: "Unknown",
 };
 
