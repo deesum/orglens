@@ -60,12 +60,47 @@ export interface Recommendation {
   deferredRisk: string;
 }
 
+export interface PlaybookGuidance {
+  findingId: string;
+  domain: "Apex" | "LWC" | "Flow" | "General";
+  ruleName: string;
+  whyPriority: string;
+  fixSteps: string[];
+  verificationSteps: string[];
+}
+
+export interface TrendDelta {
+  previousSnapshotFile?: string;
+  previousScore?: number;
+  scoreDelta?: number;
+  previousFindingCount?: number;
+  findingDelta?: number;
+  status: "no_baseline" | "improved" | "regressed" | "unchanged";
+}
+
+export interface BacklogItem {
+  key: string;
+  title: string;
+  description: string;
+  severity: Severity;
+  priorityScore: number;
+  effort: "S" | "M" | "L";
+  ownerTeam: string;
+  releaseTrain: string;
+  componentPath: string;
+  recommendation: string;
+  jiraLabels: string[];
+}
+
 export interface AnalysisResult {
   score: ScoreResult;
   topDebts: PrioritizedDebt[];
   graph: DependencyGraph;
   findings: AnalyzerFinding[];
   recommendations: Recommendation[];
+  playbooks: PlaybookGuidance[];
+  trend: TrendDelta;
+  backlog: BacklogItem[];
   scannerStatus: "ok" | "failed" | "not_run";
   scannerMessage?: string;
   timestamp: string;
@@ -81,4 +116,9 @@ export interface AnalyzeOptions {
   configPath?: string;
   provider?: "openai" | "anthropic";
   threshold?: number;
+  team?: string;
+  releaseTrain?: string;
+  backlogOut?: string;
+  componentTypes?: MetadataType[];
+  components?: string[];
 }

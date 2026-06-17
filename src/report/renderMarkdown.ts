@@ -62,6 +62,16 @@ export function renderMarkdown(result: AnalysisResult): string {
    - deferred-risk: ${r.deferredRisk}`,
     )
     .join("\n");
+  const playbooks = result.playbooks
+    .slice(0, 10)
+    .map(
+      (p, idx) =>
+        `${idx + 1}. **${p.findingId}** [${p.domain}] ${p.ruleName}
+   - why-priority: ${p.whyPriority}
+   - fix-steps: ${p.fixSteps.join(" | ")}
+   - verification: ${p.verificationSteps.join(" | ")}`,
+    )
+    .join("\n");
 
   return [
     "# Config Reverse Engineer Report",
@@ -78,11 +88,24 @@ export function renderMarkdown(result: AnalysisResult): string {
     "## Recommendations",
     recommendations || "_No recommendations generated._",
     "",
+    "## Trend Delta",
+    `- Status: ${result.trend.status}`,
+    `- Previous Score: ${result.trend.previousScore ?? "n/a"}`,
+    `- Score Delta: ${result.trend.scoreDelta ?? "n/a"}`,
+    `- Previous Finding Count: ${result.trend.previousFindingCount ?? "n/a"}`,
+    `- Finding Delta: ${result.trend.findingDelta ?? "n/a"}`,
+    "",
+    "## Domain Playbooks",
+    playbooks || "_No playbook entries generated._",
+    "",
     "## Summary By Rule",
     ruleSummary || "_No scanner rule findings to summarize._",
     "",
     "## Dependency Impact",
     `- Nodes: ${result.graph.nodes.length}`,
     `- Edges: ${result.graph.edges.length}`,
+    "",
+    "## Jira Backlog",
+    `- Items: ${result.backlog.length}`,
   ].join("\n");
 }

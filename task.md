@@ -42,4 +42,6 @@
 - ADRs / Notes:
   - Use targeted deployments only.
   - Use deterministic scoring and evidence-bound recommendations.
+  - Added value upgrades: domain playbooks, trend delta analytics, and Jira-ready backlog export.
+  - Added Java-unavailable fallback scanner so restricted runtimes still generate actionable findings.
 - Reference Docs: `docs/config-reverse-engineer-agent/architecture.md`

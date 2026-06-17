@@ -101,3 +101,18 @@ cre-agent analyze --repo . --target-org fslspecialedition --format md --provider
 3. Review top 10 debt findings with fix-now rationale.
 4. Review recommendations and verify evidence finding IDs.
 5. Export JSON/MD for backlog and governance tracking.
+
+## 9) Export Jira-ready backlog
+
+```bash
+cre-agent analyze \
+  --repo . \
+  --package manifest/config-reverse-engineer-agent/package.xml \
+  --target-org fslspecialedition \
+  --format html \
+  --team "FSL-Architecture" \
+  --release-train "R2" \
+  --backlog-out "./cre-backlog.csv"
+```
+
+The generated CSV includes key, summary, severity, effort, owner team, release train, and recommendation fields for backlog import.

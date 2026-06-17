@@ -11,3 +11,7 @@ coverage/
 .DS_Store
 .cre-snapshots/
 .cre-sample-report.json
+cre-report.json
+cre-report.html
+cre-report-forceapp.json
+cre-backlog.csv

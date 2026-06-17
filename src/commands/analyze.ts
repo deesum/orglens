@@ -6,6 +6,7 @@ import { computeBlastRadius } from "../deps/impactScorer.js";
 import { generateRecommendations } from "../llm/providerClient.js";
 import { evaluateCiGate } from "../modes/ciGate.js";
 import { writeGovernanceSnapshot } from "../modes/governanceSnapshot.js";
+import { computeTrendDelta } from "../modes/trendDelta.js";
 import { parseApex } from "../parser/apexParser.js";
 import { parseFlows } from "../parser/flowParser.js";
 import { parseLwc } from "../parser/lwcParser.js";
@@ -14,6 +15,8 @@ import { rankDebts } from "../ranking/priorityRanker.js";
 import { renderHtml } from "../report/renderHtml.js";
 import { renderJson } from "../report/renderJson.js";
 import { renderMarkdown } from "../report/renderMarkdown.js";
+import { buildBacklogItems, writeBacklogCsv } from "../report/backlogExport.js";
+import { buildPlaybook } from "../report/playbook.js";
 import { applySuppressions } from "../rules/suppressions.js";
 import { computeConfidence } from "../scoring/confidence.js";
 import { computeScore } from "../scoring/scoreModel.js";
@@ -53,6 +56,38 @@ function buildFallbackRecommendations(result: {
   });
 }
 
+function filterByComponentSelection(
+  nodes: AnalysisResult["graph"]["nodes"],
+  findings: AnalysisResult["findings"],
+  componentTypes?: AnalyzeOptions["componentTypes"],
+  components?: AnalyzeOptions["components"],
+): { nodes: AnalysisResult["graph"]["nodes"]; findings: AnalysisResult["findings"] } {
+  const selectedTypes = new Set(componentTypes ?? []);
+  const selectedComponents = new Set((components ?? []).filter(Boolean));
+  const typeFilterOn = selectedTypes.size > 0;
+  const componentFilterOn = selectedComponents.size > 0;
+
+  if (!typeFilterOn && !componentFilterOn) {
+    return { nodes, findings };
+  }
+
+  const filteredNodes = nodes.filter((node) => {
+    const typeMatch = !typeFilterOn || selectedTypes.has(node.type);
+    const componentMatch = !componentFilterOn || selectedComponents.has(node.name);
+    return typeMatch && componentMatch;
+  });
+
+  const nodePaths = new Set(filteredNodes.map((n) => n.path));
+  const nodeNames = new Set(filteredNodes.map((n) => n.name));
+  const filteredFindings = findings.filter((finding) => {
+    if (nodePaths.has(finding.filePath)) return true;
+    if (finding.componentName && nodeNames.has(finding.componentName)) return true;
+    return false;
+  });
+
+  return { nodes: filteredNodes, findings: filteredFindings };
+}
+
 export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   const repoPath = path.resolve(options.repo);
   const packagePath = options.packagePath ? path.resolve(options.packagePath) : undefined;
@@ -62,11 +97,17 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   }
 
   const scannerRun = runCodeAnalyzer(repoPath);
-  const parsedNodes = filterNodesByPackage(
+  const packageScopedNodes = filterNodesByPackage(
     [...parseApex(repoPath), ...parseLwc(repoPath), ...parseFlows(repoPath)],
     packagePath,
   );
-  const scannerFindings = filterFindingsByPackage(scannerRun.findings, parsedNodes, packagePath);
+  const packageScopedFindings = filterFindingsByPackage(scannerRun.findings, packageScopedNodes, packagePath);
+  const { nodes: parsedNodes, findings: scannerFindings } = filterByComponentSelection(
+    packageScopedNodes,
+    packageScopedFindings,
+    options.componentTypes,
+    options.components,
+  );
   const graph = buildDependencyGraph(parsedNodes);
   const { activeFindings } = applySuppressions(scannerFindings, config);
   const confidence = computeConfidence(activeFindings, graph);
@@ -84,12 +125,22 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   if (recommendations.length === 0 && topDebts.length > 0) {
     recommendations = buildFallbackRecommendations({ topDebts, findings: activeFindings });
   }
+  const playbooks = buildPlaybook(activeFindings);
+  const trend = computeTrendDelta({ score, findings: activeFindings }, config, repoPath);
+  const backlog = buildBacklogItems(
+    { topDebts, findings: activeFindings, recommendations },
+    options.team ?? "Architecture",
+    options.releaseTrain ?? "R1",
+  );
   const result: AnalysisResult = {
     score,
     topDebts,
     graph,
     findings: activeFindings,
     recommendations,
+    playbooks,
+    trend,
+    backlog,
     scannerStatus: scannerRun.status,
     scannerMessage: scannerRun.message,
     timestamp: new Date().toISOString(),
@@ -99,6 +150,12 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   const outputPath = resolveOutputPath(repoPath, options.out, options.format);
   fs.writeFileSync(outputPath, output, "utf8");
   console.log(`Report written to ${outputPath}`);
+
+  const backlogOutputPath =
+    options.backlogOut ??
+    path.resolve(repoPath, "cre-backlog.csv");
+  writeBacklogCsv(backlog, backlogOutputPath);
+  console.log(`Backlog export written to ${backlogOutputPath}`);
 
   if (options.mode === "governance") {
     const snapshotPath = writeGovernanceSnapshot(result, config, repoPath);

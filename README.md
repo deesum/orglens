@@ -82,12 +82,33 @@ Schedule daily/weekly and persist snapshots:
 cre-agent analyze --repo . --format md --mode governance
 ```
 
+### Run from Browser UI (component selection)
+
+Launch local UI server:
+
+```bash
+cre-agent ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --package "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/manifest/force-app-main-default.xml" --target-org fslspecialedition --port 4173
+```
+
+Open:
+
+- `http://127.0.0.1:4173`
+
+In the UI you can:
+
+- choose component types (Apex/LWC/Flow)
+- optionally select specific component names
+- run scanner and preview report directly
+
 ## What You Receive
 
 - Overall Health Score
 - Top 10 prioritized debt findings with "fix now" rationale
 - Dependency impact graph summary
 - Human-readable recommendations with finding evidence IDs
+- Domain-specific remediation playbooks (Apex, LWC, Flow)
+- Trend deltas against previous governance snapshots
+- Jira-ready backlog export with team and release-train tags
 - Exportable JSON/Markdown/HTML artifacts
 
 ## Example User Journey
@@ -95,6 +116,31 @@ cre-agent analyze --repo . --format md --mode governance
 ```bash
 sf org login web
 cre-agent analyze --repo . --package package.xml --target-org myorg --format html
+```
+
+### Backlog Export (Jira-ready)
+
+```bash
+cre-agent analyze \
+  --repo . \
+  --package package.xml \
+  --target-org myorg \
+  --format html \
+  --team "FSL-Architecture" \
+  --release-train "R2" \
+  --backlog-out "./cre-backlog.csv"
+```
+
+### Component-scoped CLI example
+
+```bash
+cre-agent analyze \
+  --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" \
+  --package "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/manifest/force-app-main-default.xml" \
+  --target-org fslspecialedition \
+  --format html \
+  --component-types ApexClass,Flow \
+  --components DistanceCalculator,FSL_Capture_WOLI_Location
 ```
 
 ## Deploy (Salesforce Metadata Only)

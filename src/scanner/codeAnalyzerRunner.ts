@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { AnalyzerFinding } from "../types/models.js";
 import { runCommand } from "../utils/process.js";
+import { runLightweightFallbackScanner } from "./lightweightFallbackScanner.js";
 import { normalizeFindings } from "./normalizeFindings.js";
 
 interface ScannerPayload {
@@ -67,6 +68,23 @@ export function runCodeAnalyzer(repoPath: string): ScannerRunResult {
   );
 
   if (!command.ok) {
+    const failureOutput = `${command.stderr}\n${command.stdout}`;
+    const javaFailure =
+      failureOutput.includes("Unable to locate a Java Runtime") ||
+      failureOutput.includes("Could not fetch Java version");
+
+    // In restricted runtimes where Java cannot be resolved, retry with non-Java engines
+    // so the tool still returns actionable scanner results instead of an empty report.
+    if (javaFailure) {
+      const fallbackFindings = runLightweightFallbackScanner(repoPath);
+      return {
+        findings: fallbackFindings,
+        status: "ok",
+        message:
+          "Java runtime unavailable for Salesforce scanner. Used lightweight fallback checks for Apex/LWC patterns.",
+      };
+    }
+
     return {
       findings: [],
       status: "failed",
