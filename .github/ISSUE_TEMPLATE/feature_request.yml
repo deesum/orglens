@@ -1,0 +1,39 @@
+name: Feature Request
+description: Propose a feature for the Config Reverse Engineer Agent.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: work_item
+    attributes:
+      label: Work Item ID
+      description: Enter the tracking ID (example W-1234567)
+      placeholder: W-1234567
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem are we solving?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Define in-scope and out-of-scope items.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: List clear, testable criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies/Risks
+      description: Salesforce org, metadata, security, or external dependencies.

@@ -1,0 +1,31 @@
+name: Task
+description: Track a non-feature implementation task.
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: input
+    id: work_item
+    attributes:
+      label: Work Item ID
+      placeholder: W-1234567
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should be completed?
+    validations:
+      required: true
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: List concrete outputs/files.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of Done
+      description: Tests, docs, and review requirements.

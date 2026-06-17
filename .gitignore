@@ -1,0 +1,10 @@
+.sf/
+.sfdx/
+node_modules/
+coverage/
+.env
+.env.*
+*.pem
+*.key
+*.crt
+.DS_Store

@@ -1,0 +1,44 @@
+name: Bug Report
+description: Report a defect with reproducible details.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: work_item
+    attributes:
+      label: Work Item ID
+      description: Enter the related tracking ID (if available)
+      placeholder: W-1234567
+  - type: textarea
+    id: symptoms
+    attributes:
+      label: Symptoms
+      description: What is happening?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide exact steps and data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Evidence
+      description: Include error text, stack traces, and environment details.
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - label: Security risk
+        - label: Data integrity risk
+        - label: Production impact
