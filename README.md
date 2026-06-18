@@ -7,6 +7,9 @@
 > impact, remediation playbooks, and a Jira-ready backlog — in an interactive
 > HTML report or as JSON/Markdown for CI.
 
+> **See it in action:** a real sample run lives in [`examples/`](./examples/) —
+> view the [rendered HTML report](https://raw.githack.com/deesum/orglens/main/examples/sample-report.html).
+
 ---
 
 ## Table of Contents

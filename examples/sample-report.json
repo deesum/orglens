@@ -1,0 +1,883 @@
+{
+  "score": {
+    "overall": 75,
+    "confidence": 2,
+    "breakdown": {
+      "security": 100,
+      "maintainability": 0,
+      "reliability": 100,
+      "performance": 100,
+      "operability": 100
+    }
+  },
+  "grade": {
+    "letter": "C",
+    "label": "Fair"
+  },
+  "topDebts": [
+    {
+      "findingId": "finding-3",
+      "priorityScore": 50,
+      "effort": "S",
+      "blastRadius": 0,
+      "fixNowReason": "CRITICAL severity with blast radius 0."
+    },
+    {
+      "findingId": "finding-1",
+      "priorityScore": 44,
+      "effort": "M",
+      "blastRadius": 0,
+      "fixNowReason": "CRITICAL severity with blast radius 0."
+    },
+    {
+      "findingId": "finding-2",
+      "priorityScore": 44,
+      "effort": "M",
+      "blastRadius": 0,
+      "fixNowReason": "CRITICAL severity with blast radius 0."
+    },
+    {
+      "findingId": "finding-4",
+      "priorityScore": 44,
+      "effort": "M",
+      "blastRadius": 0,
+      "fixNowReason": "CRITICAL severity with blast radius 0."
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "ApexClass:DistanceCalculator",
+        "name": "DistanceCalculator",
+        "type": "ApexClass",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:createCaseAction",
+        "name": "createCaseAction",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/createCaseAction/createCaseAction.html",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslCaptureLocation",
+        "name": "fslCaptureLocation",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslCaptureLocation/__tests__/fslCaptureLocation.test.js",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslCaptureLocationAction",
+        "name": "fslCaptureLocationAction",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslCaptureLocationAction/fslCaptureLocationAction.html",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslConsentCapture",
+        "name": "fslConsentCapture",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslConsentCapture/fslConsentCapture.html",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslDistanceCalculator",
+        "name": "fslDistanceCalculator",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslDistanceCalculator/__tests__/fslDistanceCalculator.test.js",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslDistanceCalculatorDebug",
+        "name": "fslDistanceCalculatorDebug",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslDistanceCalculatorDebug/fslDistanceCalculatorDebug.html",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslDistanceCalculatorFlow",
+        "name": "fslDistanceCalculatorFlow",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslDistanceCalculatorFlow/fslDistanceCalculatorFlow.html",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:fslShortestDistanceCalculator",
+        "name": "fslShortestDistanceCalculator",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/fslShortestDistanceCalculator/__tests__/fslShortestDistanceCalculator.test.js",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:helloWorld",
+        "name": "helloWorld",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/helloWorld/__tests__/helloWorld.test.js",
+        "references": []
+      },
+      {
+        "id": "LightningComponentBundle:locationDistance",
+        "name": "locationDistance",
+        "type": "LightningComponentBundle",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/lwc/locationDistance/__tests__/locationDistance.test.js",
+        "references": []
+      },
+      {
+        "id": "Flow:BrowserVersion_TestWorkOrderScreenNumber",
+        "name": "BrowserVersion_TestWorkOrderScreenNumber",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/BrowserVersion_TestWorkOrderScreenNumber.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:CalculateDistance",
+        "name": "CalculateDistance",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/CalculateDistance.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Create_Case_From_Global_Action",
+        "name": "Create_Case_From_Global_Action",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Create_Case_From_Global_Action.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Deepak_FSL_Distance_Calculator_Offline_Only",
+        "name": "Deepak_FSL_Distance_Calculator_Offline_Only",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Deepak_FSL_Distance_Calculator_Offline_Only.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Deepak_Field_Service_Mobile_flow_Calculate_Distance",
+        "name": "Deepak_Field_Service_Mobile_flow_Calculate_Distance",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Deepak_Field_Service_Mobile_flow_Calculate_Distance.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Calculate_Distance_To_Asset",
+        "name": "FSL_Calculate_Distance_To_Asset",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Calculate_Distance_To_Asset.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Capture_WOLI_Location",
+        "name": "FSL_Capture_WOLI_Location",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Capture_WOLI_Location.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Distance_Calculator_Demo",
+        "name": "FSL_Distance_Calculator_Demo",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Distance_Calculator_Demo.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Distance_Calculator_Subflow",
+        "name": "FSL_Distance_Calculator_Subflow",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Distance_Calculator_Subflow.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Mobile_Calculate_Distance",
+        "name": "FSL_Mobile_Calculate_Distance",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Mobile_Calculate_Distance.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Mobile_Distance_Calculator_With_Location",
+        "name": "FSL_Mobile_Distance_Calculator_With_Location",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Mobile_Distance_Calculator_With_Location.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Mobile_Distance_Results",
+        "name": "FSL_Mobile_Distance_Results",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Mobile_Distance_Results.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_Subflow_Haversine_Distance_Calculator",
+        "name": "FSL_Subflow_Haversine_Distance_Calculator",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_Subflow_Haversine_Distance_Calculator.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSL_WOLI_Calculate_Distance_to_Span",
+        "name": "FSL_WOLI_Calculate_Distance_to_Span",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSL_WOLI_Calculate_Distance_to_Span.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__Add_Asset_to_Maintenance_Plan",
+        "name": "FSSK__Add_Asset_to_Maintenance_Plan",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__Add_Asset_to_Maintenance_Plan.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Actual_Times_Capturing",
+        "name": "FSSK__FSK_Actual_Times_Capturing",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Actual_Times_Capturing.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Cancelation_Canned_Notification",
+        "name": "FSSK__FSK_Cancelation_Canned_Notification",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Cancelation_Canned_Notification.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Canned_Notification_Dispatched",
+        "name": "FSSK__FSK_Canned_Notification_Dispatched",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Canned_Notification_Dispatched.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Exclude_Resource_On_Rejection",
+        "name": "FSSK__FSK_Exclude_Resource_On_Rejection",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Exclude_Resource_On_Rejection.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Populate_Custom_Work_Order_Lookup",
+        "name": "FSSK__FSK_Populate_Custom_Work_Order_Lookup",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Populate_Custom_Work_Order_Lookup.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Reflect_Actual_Times_on_Gantt",
+        "name": "FSSK__FSK_Reflect_Actual_Times_on_Gantt",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Reflect_Actual_Times_on_Gantt.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Resource_Deactivation",
+        "name": "FSSK__FSK_Resource_Deactivation",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Resource_Deactivation.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Service_Appointment",
+        "name": "FSSK__FSK_Service_Appointment",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Service_Appointment.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Set_Assign_Resource_On_Service_Appointment",
+        "name": "FSSK__FSK_Set_Assign_Resource_On_Service_Appointment",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Set_Assign_Resource_On_Service_Appointment.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Set_Assign_Service_Resource_On_Service_Appointment",
+        "name": "FSSK__FSK_Set_Assign_Service_Resource_On_Service_Appointment",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Set_Assign_Service_Resource_On_Service_Appointment.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Set_Gantt_Label_Concatenation",
+        "name": "FSSK__FSK_Set_Gantt_Label_Concatenation",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Set_Gantt_Label_Concatenation.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Update_Work_Order_Child_Records",
+        "name": "FSSK__FSK_Update_Work_Order_Child_Records",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Update_Work_Order_Child_Records.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__FSK_Work_Order_Process",
+        "name": "FSSK__FSK_Work_Order_Process",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__FSK_Work_Order_Process.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:FSSK__Field_Service_Mobile_Status_Transition",
+        "name": "FSSK__Field_Service_Mobile_Status_Transition",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/FSSK__Field_Service_Mobile_Status_Transition.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Field_Service_Mobile_Calculate_Distance",
+        "name": "Field_Service_Mobile_Calculate_Distance",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Field_Service_Mobile_Calculate_Distance.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:SA_BeforeTriggerFlow",
+        "name": "SA_BeforeTriggerFlow",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/SA_BeforeTriggerFlow.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Safety_Checklist_Flow",
+        "name": "Safety_Checklist_Flow",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Safety_Checklist_Flow.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:TestDataCaptureServiceAppointmentStatusChange",
+        "name": "TestDataCaptureServiceAppointmentStatusChange",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/TestDataCaptureServiceAppointmentStatusChange.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:TestGetWorkOrderDetails",
+        "name": "TestGetWorkOrderDetails",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/TestGetWorkOrderDetails.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:TestSADetails",
+        "name": "TestSADetails",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/TestSADetails.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:TestSendEmailOnWOCreateUpdate",
+        "name": "TestSendEmailOnWOCreateUpdate",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/TestSendEmailOnWOCreateUpdate.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:TestWorkOrderScreenNumber",
+        "name": "TestWorkOrderScreenNumber",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/TestWorkOrderScreenNumber.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Test_BeforeFlow",
+        "name": "Test_BeforeFlow",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Test_BeforeFlow.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:Test_New_FSL_Mobile_Flow",
+        "name": "Test_New_FSL_Mobile_Flow",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/Test_New_FSL_Mobile_Flow.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:VM_Distance_Calculator",
+        "name": "VM_Distance_Calculator",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/VM_Distance_Calculator.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:VM_Distance_Calculator_Demo",
+        "name": "VM_Distance_Calculator_Demo",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/VM_Distance_Calculator_Demo.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:VM_Manual_Capture_WOLI_Location",
+        "name": "VM_Manual_Capture_WOLI_Location",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/VM_Manual_Capture_WOLI_Location.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:VM_Subflow_Haversine_Distance_Calculator",
+        "name": "VM_Subflow_Haversine_Distance_Calculator",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/VM_Subflow_Haversine_Distance_Calculator.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:VM_WOLI_Calculate_Distance_to_Span",
+        "name": "VM_WOLI_Calculate_Distance_to_Span",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/VM_WOLI_Calculate_Distance_to_Span.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "Flow:WO_Before_Save",
+        "name": "WO_Before_Save",
+        "type": "Flow",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/flows/WO_Before_Save.flow-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomLabel:CustomLabels",
+        "name": "CustomLabels",
+        "type": "CustomLabel",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/labels/CustomLabels.labels-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Captured_Location__c",
+        "name": "Captured_Location__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrder/fields/Captured_Location__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Distance_To_Asset_Km__c",
+        "name": "Distance_To_Asset_Km__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrder/fields/Distance_To_Asset_Km__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Location_Captured_At__c",
+        "name": "Location_Captured_At__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrder/fields/Location_Captured_At__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Location_Consent__c",
+        "name": "Location_Consent__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrder/fields/Location_Consent__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Agent_Zone__c",
+        "name": "Agent_Zone__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Agent_Zone__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Distance_To_End_Meters__c",
+        "name": "Distance_To_End_Meters__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Distance_To_End_Meters__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Distance_To_Start_Meters__c",
+        "name": "Distance_To_Start_Meters__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Distance_To_Start_Meters__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Perpendicular_Distance_Meters__c",
+        "name": "Perpendicular_Distance_Meters__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Perpendicular_Distance_Meters__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Projection_Ratio__c",
+        "name": "Projection_Ratio__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Projection_Ratio__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Shortest_Distance_Meters__c",
+        "name": "Shortest_Distance_Meters__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Shortest_Distance_Meters__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Span_End_Latitude__c",
+        "name": "Span_End_Latitude__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Span_End_Latitude__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Span_End_Longitude__c",
+        "name": "Span_End_Longitude__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Span_End_Longitude__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Span_Length_Meters__c",
+        "name": "Span_Length_Meters__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Span_Length_Meters__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Span_Start_Latitude__c",
+        "name": "Span_Start_Latitude__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Span_Start_Latitude__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "CustomField:Span_Start_Longitude__c",
+        "name": "Span_Start_Longitude__c",
+        "type": "CustomField",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/objects/WorkOrderLineItem/fields/Span_Start_Longitude__c.field-meta.xml",
+        "references": []
+      },
+      {
+        "id": "PermissionSet:FSL_Mobile_Location_Capture",
+        "name": "FSL_Mobile_Location_Capture",
+        "type": "PermissionSet",
+        "path": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/permissionsets/FSL_Mobile_Location_Capture.permissionset-meta.xml",
+        "references": []
+      }
+    ],
+    "edges": []
+  },
+  "findings": [
+    {
+      "id": "finding-1",
+      "ruleName": "LocalVariableNamingConventions",
+      "message": "The final local variable name 'EARTH_RADIUS_METERS' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "category": "Code Style",
+      "filePath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "componentName": "DistanceCalculator",
+      "line": 62,
+      "metadataType": "ApexClass",
+      "references": [],
+      "url": "https://docs.pmd-code.org/pmd-doc-7.11.0/pmd_rules_apex_codestyle.html#localvariablenamingconventions"
+    },
+    {
+      "id": "finding-2",
+      "ruleName": "LocalVariableNamingConventions",
+      "message": "The final local variable name 'METERS_TO_FEET' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "category": "Code Style",
+      "filePath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "componentName": "DistanceCalculator",
+      "line": 63,
+      "metadataType": "ApexClass",
+      "references": [],
+      "url": "https://docs.pmd-code.org/pmd-doc-7.11.0/pmd_rules_apex_codestyle.html#localvariablenamingconventions"
+    },
+    {
+      "id": "finding-3",
+      "ruleName": "LocalVariableNamingConventions",
+      "message": "The final local variable name 'METERS_TO_KM' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "category": "Code Style",
+      "filePath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "componentName": "DistanceCalculator",
+      "line": 64,
+      "metadataType": "ApexClass",
+      "references": [],
+      "url": "https://docs.pmd-code.org/pmd-doc-7.11.0/pmd_rules_apex_codestyle.html#localvariablenamingconventions"
+    },
+    {
+      "id": "finding-4",
+      "ruleName": "LocalVariableNamingConventions",
+      "message": "The final local variable name 'METERS_TO_MILES' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "category": "Code Style",
+      "filePath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "componentName": "DistanceCalculator",
+      "line": 65,
+      "metadataType": "ApexClass",
+      "references": [],
+      "url": "https://docs.pmd-code.org/pmd-doc-7.11.0/pmd_rules_apex_codestyle.html#localvariablenamingconventions"
+    }
+  ],
+  "recommendations": [
+    {
+      "title": "Fix LocalVariableNamingConventions",
+      "rationale": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_KM' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "impactedArtifacts": [
+        "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls"
+      ],
+      "evidenceFindingIds": [
+        "finding-3"
+      ],
+      "effort": "S",
+      "deferredRisk": "Continued Code Style debt can increase maintenance and reliability risk."
+    },
+    {
+      "title": "Fix LocalVariableNamingConventions",
+      "rationale": "CRITICAL issue in Code Style: The final local variable name 'EARTH_RADIUS_METERS' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "impactedArtifacts": [
+        "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls"
+      ],
+      "evidenceFindingIds": [
+        "finding-1"
+      ],
+      "effort": "M",
+      "deferredRisk": "Continued Code Style debt can increase maintenance and reliability risk."
+    },
+    {
+      "title": "Fix LocalVariableNamingConventions",
+      "rationale": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_FEET' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "impactedArtifacts": [
+        "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls"
+      ],
+      "evidenceFindingIds": [
+        "finding-2"
+      ],
+      "effort": "M",
+      "deferredRisk": "Continued Code Style debt can increase maintenance and reliability risk."
+    },
+    {
+      "title": "Fix LocalVariableNamingConventions",
+      "rationale": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_MILES' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "impactedArtifacts": [
+        "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls"
+      ],
+      "evidenceFindingIds": [
+        "finding-4"
+      ],
+      "effort": "M",
+      "deferredRisk": "Continued Code Style debt can increase maintenance and reliability risk."
+    }
+  ],
+  "playbooks": [
+    {
+      "findingId": "finding-1",
+      "domain": "Apex",
+      "ruleName": "LocalVariableNamingConventions",
+      "whyPriority": "CRITICAL severity in Code Style at /Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls.",
+      "fixSteps": [
+        "Rename the flagged symbol to satisfy naming conventions.",
+        "Refactor the flagged Apex block to follow Salesforce coding standards and PMD guidance."
+      ],
+      "verificationSteps": [
+        "Run Apex tests for impacted classes and validate no regression in business logic."
+      ]
+    },
+    {
+      "findingId": "finding-2",
+      "domain": "Apex",
+      "ruleName": "LocalVariableNamingConventions",
+      "whyPriority": "CRITICAL severity in Code Style at /Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls.",
+      "fixSteps": [
+        "Rename the flagged symbol to satisfy naming conventions.",
+        "Refactor the flagged Apex block to follow Salesforce coding standards and PMD guidance."
+      ],
+      "verificationSteps": [
+        "Run Apex tests for impacted classes and validate no regression in business logic."
+      ]
+    },
+    {
+      "findingId": "finding-3",
+      "domain": "Apex",
+      "ruleName": "LocalVariableNamingConventions",
+      "whyPriority": "CRITICAL severity in Code Style at /Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls.",
+      "fixSteps": [
+        "Rename the flagged symbol to satisfy naming conventions.",
+        "Refactor the flagged Apex block to follow Salesforce coding standards and PMD guidance."
+      ],
+      "verificationSteps": [
+        "Run Apex tests for impacted classes and validate no regression in business logic."
+      ]
+    },
+    {
+      "findingId": "finding-4",
+      "domain": "Apex",
+      "ruleName": "LocalVariableNamingConventions",
+      "whyPriority": "CRITICAL severity in Code Style at /Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls.",
+      "fixSteps": [
+        "Rename the flagged symbol to satisfy naming conventions.",
+        "Refactor the flagged Apex block to follow Salesforce coding standards and PMD guidance."
+      ],
+      "verificationSteps": [
+        "Run Apex tests for impacted classes and validate no regression in business logic."
+      ]
+    }
+  ],
+  "trend": {
+    "previousSnapshotFile": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/.cre-snapshots/snapshot-2026-06-17T18-58-24.583Z.json",
+    "previousScore": 75,
+    "scoreDelta": 0,
+    "previousFindingCount": 4,
+    "findingDelta": 0,
+    "status": "unchanged"
+  },
+  "history": [
+    {
+      "timestamp": "2026-06-17T18:58:16.795Z",
+      "score": 75,
+      "findingCount": 4
+    },
+    {
+      "timestamp": "2026-06-17T18:58:24.582Z",
+      "score": 75,
+      "findingCount": 4
+    },
+    {
+      "timestamp": "2026-06-18T01:56:56.484Z",
+      "score": 75,
+      "findingCount": 4
+    }
+  ],
+  "whatIf": [
+    {
+      "kind": "rule",
+      "label": "LocalVariableNamingConventions",
+      "findingsResolved": 4,
+      "effortPoints": 10,
+      "projectedScore": 100,
+      "scoreLift": 25
+    },
+    {
+      "kind": "component",
+      "label": "DistanceCalculator",
+      "findingsResolved": 4,
+      "effortPoints": 10,
+      "projectedScore": 100,
+      "scoreLift": 25
+    },
+    {
+      "kind": "severity",
+      "label": "All critical findings",
+      "findingsResolved": 4,
+      "effortPoints": 10,
+      "projectedScore": 100,
+      "scoreLift": 25
+    }
+  ],
+  "roadmap": [
+    {
+      "name": "Sprint 1",
+      "findingIds": [
+        "finding-3",
+        "finding-1",
+        "finding-2",
+        "finding-4"
+      ],
+      "itemCount": 4,
+      "effortPoints": 10,
+      "severity": {
+        "critical": 4,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "projectedScoreAfter": 100
+    }
+  ],
+  "ownership": [
+    {
+      "owner": "Unassigned",
+      "findingCount": 4,
+      "critical": 4,
+      "high": 0,
+      "effortPoints": 10,
+      "topRules": [
+        {
+          "rule": "LocalVariableNamingConventions",
+          "count": 4
+        }
+      ]
+    }
+  ],
+  "backlog": [
+    {
+      "key": "ORGLENS-1",
+      "title": "LocalVariableNamingConventions in DistanceCalculator.cls",
+      "description": "The final local variable name 'METERS_TO_KM' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "priorityScore": 50,
+      "effort": "S",
+      "ownerTeam": "Architecture",
+      "owner": "Unassigned",
+      "releaseTrain": "R1",
+      "componentPath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "recommendation": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_KM' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "jiraLabels": [
+        "orglens",
+        "severity-critical",
+        "effort-s"
+      ]
+    },
+    {
+      "key": "ORGLENS-2",
+      "title": "LocalVariableNamingConventions in DistanceCalculator.cls",
+      "description": "The final local variable name 'EARTH_RADIUS_METERS' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "priorityScore": 44,
+      "effort": "M",
+      "ownerTeam": "Architecture",
+      "owner": "Unassigned",
+      "releaseTrain": "R1",
+      "componentPath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "recommendation": "CRITICAL issue in Code Style: The final local variable name 'EARTH_RADIUS_METERS' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "jiraLabels": [
+        "orglens",
+        "severity-critical",
+        "effort-m"
+      ]
+    },
+    {
+      "key": "ORGLENS-3",
+      "title": "LocalVariableNamingConventions in DistanceCalculator.cls",
+      "description": "The final local variable name 'METERS_TO_FEET' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "priorityScore": 44,
+      "effort": "M",
+      "ownerTeam": "Architecture",
+      "owner": "Unassigned",
+      "releaseTrain": "R1",
+      "componentPath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "recommendation": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_FEET' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "jiraLabels": [
+        "orglens",
+        "severity-critical",
+        "effort-m"
+      ]
+    },
+    {
+      "key": "ORGLENS-4",
+      "title": "LocalVariableNamingConventions in DistanceCalculator.cls",
+      "description": "The final local variable name 'METERS_TO_MILES' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "severity": "critical",
+      "priorityScore": 44,
+      "effort": "M",
+      "ownerTeam": "Architecture",
+      "owner": "Unassigned",
+      "releaseTrain": "R1",
+      "componentPath": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/force-app/main/default/classes/DistanceCalculator.cls",
+      "recommendation": "CRITICAL issue in Code Style: The final local variable name 'METERS_TO_MILES' doesn't match '[a-z][a-zA-Z0-9]*'",
+      "jiraLabels": [
+        "orglens",
+        "severity-critical",
+        "effort-m"
+      ]
+    }
+  ],
+  "scannerStatus": "ok",
+  "timestamp": "2026-06-18T01:56:56.484Z"
+}
