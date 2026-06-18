@@ -63,4 +63,6 @@
   - Use deterministic scoring and evidence-bound recommendations.
   - Added value upgrades: domain playbooks, trend delta analytics, and Jira-ready backlog export.
   - Added Java-unavailable fallback scanner so restricted runtimes still generate actionable findings.
+  - Added rule documentation deep links (`src/report/ruleDocs.ts`): PMD Apex category pages, ESLint rule pages, LWC eslint plugin docs.
+  - Added architect/team report features: Quick Wins (high-severity + low-effort), metadata-type filter, rule reference column, severity distribution, score breakdown, component hotspot chips, and CSV export.
 - Reference Docs: `docs/config-reverse-engineer-agent/architecture.md`

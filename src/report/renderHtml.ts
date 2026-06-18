@@ -1,5 +1,6 @@
 import { AnalysisResult, AnalyzerFinding } from "../types/models.js";
 import { recommendedFixForFinding } from "./fixGuidance.js";
+import { ruleDocUrl } from "./ruleDocs.js";
 
 function escapeHtml(input: string): string {
   return input
@@ -50,13 +51,14 @@ export function renderHtml(result: AnalysisResult): string {
   // ── Rule summary ──────────────────────────────────────────────────────────
   const ruleSummaryMap = new Map<
     string,
-    { count: number; severity: string; files: Set<string> }
+    { count: number; severity: string; files: Set<string>; sample: AnalyzerFinding }
   >();
   for (const finding of result.findings) {
     const cur = ruleSummaryMap.get(finding.ruleName) ?? {
       count: 0,
       severity: finding.severity.toUpperCase(),
       files: new Set<string>(),
+      sample: finding,
     };
     cur.count += 1;
     cur.files.add(finding.filePath);
@@ -82,8 +84,15 @@ export function renderHtml(result: AnalysisResult): string {
             : data.severity === "MEDIUM"
               ? "sev-medium"
               : "sev-low";
+      const docUrl = ruleDocUrl(data.sample);
+      const ruleCell = docUrl
+        ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(rule)} <span class="ext">↗</span></a>`
+        : escapeHtml(rule);
+      const refCell = docUrl
+        ? `<a class="btn-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">View docs ↗</a>`
+        : `<span class="muted-text">—</span>`;
       return `<tr>
-        <td>${escapeHtml(rule)}</td>
+        <td>${ruleCell}</td>
         <td><strong>${data.count}</strong></td>
         <td><span class="badge ${sc}">${escapeHtml(data.severity)}</span></td>
         <td class="path-col">${escapeHtml(
@@ -92,6 +101,7 @@ export function renderHtml(result: AnalysisResult): string {
             .map((f) => compactPath(f))
             .join(" · "),
         )}</td>
+        <td>${refCell}</td>
       </tr>`;
     })
     .join("");
@@ -148,15 +158,22 @@ export function renderHtml(result: AnalysisResult): string {
 
   // ── Debt rows ─────────────────────────────────────────────────────────────
   const maxRows = 200;
+  const quickWins: Array<{ finding: AnalyzerFinding; priority: number }> = [];
   const debtRows = result.topDebts
     .slice(0, maxRows)
     .map((d, idx) => {
       const finding = findingsById.get(d.findingId);
       const compName = finding ? deriveComponentName(finding) : "";
+      const mdType = finding?.metadataType ?? "Unknown";
       const where = finding
         ? `${compactPath(finding.filePath)}${finding.line ? `:${finding.line}` : ""}`
         : "unknown";
-      const what = finding ? `${finding.ruleName} — ${finding.message}` : d.findingId;
+      const docUrl = finding ? ruleDocUrl(finding) : undefined;
+      const ruleLabel = finding ? finding.ruleName : d.findingId;
+      const ruleHtml = docUrl
+        ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(ruleLabel)} <span class="ext">↗</span></a>`
+        : escapeHtml(ruleLabel);
+      const what = finding ? `${ruleHtml} — ${escapeHtml(finding.message)}` : escapeHtml(d.findingId);
       const why = finding
         ? `${finding.severity.toUpperCase()} severity in ${finding.category}. Blast radius ${d.blastRadius}.`
         : d.fixNowReason;
@@ -165,18 +182,57 @@ export function renderHtml(result: AnalysisResult): string {
         : "Review finding details and apply rule guidance.";
       const findingId = d.findingId?.trim() ? d.findingId : `finding-${idx + 1}`;
       const severity = finding?.severity ?? "low";
-      return `<tr data-severity="${severity}" data-component="${escapeHtml(compName)}">
+      if (
+        finding &&
+        (severity === "critical" || severity === "high") &&
+        d.effort === "S" &&
+        quickWins.length < 12
+      ) {
+        quickWins.push({ finding, priority: d.priorityScore });
+      }
+      return `<tr data-severity="${severity}" data-component="${escapeHtml(compName)}" data-type="${escapeHtml(mdType)}">
         <td>${severityBadge(severity)}</td>
         <td><code class="finding-id">${escapeHtml(findingId)}</code></td>
         <td><strong>${d.priorityScore}</strong></td>
         <td><span class="badge eff-${d.effort}">${d.effort}</span></td>
         <td class="comp-cell">${escapeHtml(compName)}</td>
-        <td>${escapeHtml(what)}</td>
+        <td>${what}</td>
         <td class="path-col">${escapeHtml(where)}</td>
         <td>${escapeHtml(why)}</td>
         <td>${escapeHtml(fix)}</td>
       </tr>`;
     })
+    .join("");
+
+  // ── Quick wins (high impact, low effort) ──────────────────────────────────
+  const quickWinCards = quickWins
+    .map(({ finding, priority }) => {
+      const docUrl = ruleDocUrl(finding);
+      const ruleHtml = docUrl
+        ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(finding.ruleName)} ↗</a>`
+        : escapeHtml(finding.ruleName);
+      return `<article class="card qw-card">
+        <div class="rec-header">
+          <h4>${ruleHtml}</h4>
+          ${severityBadge(finding.severity)}
+        </div>
+        <p>${escapeHtml(finding.message)}</p>
+        <p class="path-col" style="white-space:normal">${escapeHtml(compactPath(finding.filePath))}${finding.line ? `:${finding.line}` : ""}</p>
+        <p style="font-size:11px;color:var(--muted)">Priority ${priority} · Effort S · ${escapeHtml(deriveComponentName(finding))}</p>
+      </article>`;
+    })
+    .join("");
+
+  // ── Metadata type options for filter ──────────────────────────────────────
+  const typeCounts = new Map<string, number>();
+  for (const d of result.topDebts.slice(0, maxRows)) {
+    const f = findingsById.get(d.findingId);
+    const t = f?.metadataType ?? "Unknown";
+    typeCounts.set(t, (typeCounts.get(t) ?? 0) + 1);
+  }
+  const typeOptions = [...typeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([t, c]) => `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${c})</option>`)
     .join("");
 
   // ── Recommendations ───────────────────────────────────────────────────────
@@ -367,6 +423,18 @@ export function renderHtml(result: AnalysisResult): string {
     /* ── Row count helper ── */
     .row-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
     .row-count strong { color: var(--text); }
+    /* ── Rule links ── */
+    .rule-link { color: #93c5fd; text-decoration: none; font-weight: 600; border-bottom: 1px dotted rgba(147,197,253,.5); }
+    .rule-link:hover { color: #bfdbfe; border-bottom-style: solid; }
+    .rule-link .ext { font-size: 10px; opacity: .7; }
+    .btn-link { display: inline-block; color: var(--accent); text-decoration: none; font-size: 12px; font-weight: 600; padding: 3px 10px; border: 1px solid var(--border); border-radius: 7px; transition: all .15s; white-space: nowrap; }
+    .btn-link:hover { border-color: var(--accent); background: var(--adim); color: var(--text); }
+    .muted-text { color: var(--muted); }
+    /* ── Quick wins ── */
+    .qw-card { border-left: 3px solid var(--low); }
+    .qw-card h4 { font-size: 12px; }
+    .qw-card p { font-size: 12px; color: var(--muted); margin: 5px 0; overflow-wrap: anywhere; }
+    .banner { display: flex; align-items: center; gap: 10px; background: var(--lbg); border: 1px solid rgba(34,197,94,.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; font-size: 13px; color: var(--low); }
   </style>
 </head>
 <body>
@@ -375,6 +443,7 @@ export function renderHtml(result: AnalysisResult): string {
     <a href="#overview">Overview</a>
     <a href="#rules">Rule Summary</a>
     <a href="#recommendations">Recommendations</a>
+    <a href="#quickwins">Quick Wins</a>
     <a href="#issues">All Issues</a>
     <a href="#playbooks">Playbooks</a>
     <a href="#trend">Trend</a>
@@ -453,7 +522,7 @@ export function renderHtml(result: AnalysisResult): string {
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Rule</th><th>Count</th><th>Max Severity</th><th>Example Files</th>
+            <th>Rule</th><th>Count</th><th>Max Severity</th><th>Example Files</th><th>Reference</th>
           </tr></thead>
           <tbody>${ruleSummaryRows}</tbody>
         </table>
@@ -464,6 +533,17 @@ export function renderHtml(result: AnalysisResult): string {
     <section id="recommendations">
       <h2>Recommendations</h2>
       <div class="rec-grid">${recsHtml || `<article class="card"><p>No LLM recommendations generated. Set <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> to enable AI-powered remediation guidance.</p></article>`}</div>
+    </section>
+
+    <!-- ═══ QUICK WINS ═════════════════════════════════════════════════════ -->
+    <section id="quickwins">
+      <h2>Quick Wins <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">High impact · Low effort</span></h2>
+      ${
+        quickWins.length
+          ? `<div class="banner">✓ ${quickWins.length} high-severity issues can be resolved with short (S) effort — prioritise these for immediate ROI.</div>
+             <div class="rec-grid">${quickWinCards}</div>`
+          : `<article class="card"><p style="color:var(--muted)">No high-severity, low-effort items detected. Review the All Issues table for the full prioritised backlog.</p></article>`
+      }
     </section>
 
     <!-- ═══ ALL ISSUES ═════════════════════════════════════════════════════ -->
@@ -488,6 +568,10 @@ export function renderHtml(result: AnalysisResult): string {
           <option value="S">S — Short</option>
           <option value="M">M — Medium</option>
           <option value="L">L — Large</option>
+        </select>
+        <select id="typeFilter">
+          <option value="">All Types</option>
+          ${typeOptions}
         </select>
         <button class="btn btn-accent" id="exportCsvBtn">⬇ Export CSV</button>
         <button class="btn" id="clearFiltersBtn">✕ Clear All</button>
@@ -568,6 +652,7 @@ export function renderHtml(result: AnalysisResult): string {
     const search   = document.getElementById("issueSearch");
     const sevSel   = document.getElementById("sevFilter");
     const effSel   = document.getElementById("effortFilter");
+    const typeSel  = document.getElementById("typeFilter");
     const tagsEl   = document.getElementById("filterTags");
     const cntEl    = document.getElementById("visibleCount");
     let   activeCmp = null;
@@ -578,6 +663,7 @@ export function renderHtml(result: AnalysisResult): string {
       if (activeCmp)     tags.push(tag("Component: " + activeCmp, "cmp"));
       if (sevSel.value)  tags.push(tag("Severity: " + sevSel.value, "sev"));
       if (effSel.value)  tags.push(tag("Effort: " + effSel.value, "eff"));
+      if (typeSel.value) tags.push(tag("Type: " + typeSel.value, "type"));
       if (search.value)  tags.push(tag("Search: " + search.value, "srch"));
       tagsEl.innerHTML = tags.join("");
       tagsEl.querySelectorAll(".xtag").forEach(x =>
@@ -586,6 +672,7 @@ export function renderHtml(result: AnalysisResult): string {
           if (k === "cmp")  { activeCmp = null; document.querySelectorAll(".comp-chip").forEach(c => c.classList.remove("active")); }
           if (k === "sev")  sevSel.value = "";
           if (k === "eff")  effSel.value = "";
+          if (k === "type") typeSel.value = "";
           if (k === "srch") search.value = "";
           apply();
         })
@@ -599,16 +686,19 @@ export function renderHtml(result: AnalysisResult): string {
       const q   = search.value.toLowerCase();
       const sev = sevSel.value;
       const eff = effSel.value;
+      const typ = typeSel.value;
       let cnt = 0;
       rows.forEach(r => {
         const txt  = r.textContent.toLowerCase();
         const rSev = r.dataset.severity || "";
         const rCmp = r.dataset.component || "";
+        const rType = r.dataset.type || "";
         const rEff = r.children[3]?.textContent?.trim() || "";
         const show =
           (!q   || txt.includes(q)) &&
           (!sev || rSev === sev) &&
           (!eff || rEff === eff) &&
+          (!typ || rType === typ) &&
           (!activeCmp || rCmp === activeCmp);
         r.style.display = show ? "" : "none";
         if (show) cnt++;
@@ -620,9 +710,10 @@ export function renderHtml(result: AnalysisResult): string {
     search.addEventListener("input", apply);
     sevSel.addEventListener("change", apply);
     effSel.addEventListener("change", apply);
+    typeSel.addEventListener("change", apply);
 
     document.getElementById("clearFiltersBtn").addEventListener("click", () => {
-      search.value = ""; sevSel.value = ""; effSel.value = ""; activeCmp = null;
+      search.value = ""; sevSel.value = ""; effSel.value = ""; typeSel.value = ""; activeCmp = null;
       document.querySelectorAll(".comp-chip").forEach(c => c.classList.remove("active"));
       apply();
     });
