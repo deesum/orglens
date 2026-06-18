@@ -232,15 +232,27 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   fs.writeFileSync(outputPath, output, "utf8");
   console.log(`Report written to ${outputPath}`);
 
+  // Default the backlog next to the report so a read-only scanned repo never
+  // blocks the export (the report dir is always chosen to be writable).
   const backlogOutputPath =
-    options.backlogOut ?? path.resolve(repoPath, "orglens-backlog.csv");
-  writeBacklogCsv(backlog, backlogOutputPath);
-  console.log(`Backlog export written to ${backlogOutputPath}`);
+    options.backlogOut ?? path.resolve(path.dirname(outputPath), "orglens-backlog.csv");
+  try {
+    writeBacklogCsv(backlog, backlogOutputPath);
+    console.log(`Backlog export written to ${backlogOutputPath}`);
+  } catch (error) {
+    console.warn(
+      `Skipped backlog export (${backlogOutputPath}): ${error instanceof Error ? error.message : error}`,
+    );
+  }
 
   if (options.summaryOut) {
-    const summaryPath = path.resolve(options.summaryOut);
-    fs.writeFileSync(summaryPath, renderSummary(result), "utf8");
-    console.log(`Summary written to ${summaryPath}`);
+    try {
+      const summaryPath = path.resolve(options.summaryOut);
+      fs.writeFileSync(summaryPath, renderSummary(result), "utf8");
+      console.log(`Summary written to ${summaryPath}`);
+    } catch (error) {
+      console.warn(`Skipped summary export: ${error instanceof Error ? error.message : error}`);
+    }
   }
 
   if (options.createJira) {
@@ -252,8 +264,14 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   }
 
   if (options.mode === "governance") {
-    const snapshotPath = writeGovernanceSnapshot(result, config, repoPath);
-    console.log(`Governance snapshot written to ${snapshotPath}`);
+    try {
+      const snapshotPath = writeGovernanceSnapshot(result, config, repoPath);
+      console.log(`Governance snapshot written to ${snapshotPath}`);
+    } catch (error) {
+      console.warn(
+        `Skipped governance snapshot: ${error instanceof Error ? error.message : error}`,
+      );
+    }
   }
 
   if (options.mode === "ci") {
