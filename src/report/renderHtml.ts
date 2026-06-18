@@ -26,6 +26,12 @@ function compactKnownPaths(text: string, paths: string[]): string {
   return output;
 }
 
+function docUrlFor(finding: AnalyzerFinding): string | undefined {
+  // Prefer the authoritative, version-matched URL emitted by the scanner.
+  if (finding.url && /^https?:\/\//.test(finding.url)) return finding.url;
+  return ruleDocUrl(finding);
+}
+
 function deriveComponentName(finding: AnalyzerFinding): string {
   if (finding.componentName) return finding.componentName;
   const parts = finding.filePath.replaceAll("\\", "/").split("/");
@@ -84,7 +90,7 @@ export function renderHtml(result: AnalysisResult): string {
             : data.severity === "MEDIUM"
               ? "sev-medium"
               : "sev-low";
-      const docUrl = ruleDocUrl(data.sample);
+      const docUrl = docUrlFor(data.sample);
       const ruleCell = docUrl
         ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(rule)} <span class="ext">↗</span></a>`
         : escapeHtml(rule);
@@ -168,7 +174,7 @@ export function renderHtml(result: AnalysisResult): string {
       const where = finding
         ? `${compactPath(finding.filePath)}${finding.line ? `:${finding.line}` : ""}`
         : "unknown";
-      const docUrl = finding ? ruleDocUrl(finding) : undefined;
+      const docUrl = finding ? docUrlFor(finding) : undefined;
       const ruleLabel = finding ? finding.ruleName : d.findingId;
       const ruleHtml = docUrl
         ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(ruleLabel)} <span class="ext">↗</span></a>`
@@ -207,7 +213,7 @@ export function renderHtml(result: AnalysisResult): string {
   // ── Quick wins (high impact, low effort) ──────────────────────────────────
   const quickWinCards = quickWins
     .map(({ finding, priority }) => {
-      const docUrl = ruleDocUrl(finding);
+      const docUrl = docUrlFor(finding);
       const ruleHtml = docUrl
         ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(finding.ruleName)} ↗</a>`
         : escapeHtml(finding.ruleName);

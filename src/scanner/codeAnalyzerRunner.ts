@@ -15,6 +15,7 @@ interface ScannerViolation {
   ruleName?: string;
   category?: string;
   message?: string;
+  url?: string;
 }
 
 interface ScannerFileResult {
@@ -40,6 +41,7 @@ function parseJsonSafely(content: string): ScannerPayload {
             ruleName: violation.ruleName,
             category: violation.category,
             message: violation.message,
+            url: violation.url,
           });
         }
       }

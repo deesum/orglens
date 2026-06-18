@@ -1,54 +1,75 @@
 import { AnalyzerFinding } from "../types/models.js";
 
+const PMD_DOCS_BASE = "https://docs.pmd-code.org/latest";
+
 /**
- * Maps known PMD Apex rule names to their documentation category so we can
- * build a deep link into the official PMD rule reference.
+ * Complete map of PMD Apex rule names (lowercased) to their documentation
+ * category. PMD groups Apex rules into 7 category pages and the in-page anchor
+ * is the lowercased rule name, so this lets us deep-link to the exact rule.
+ * Source: https://docs.pmd-code.org/latest/pmd_rules_apex.html
  */
 const PMD_APEX_CATEGORY: Record<string, string> = {
-  // codestyle
+  // ── bestpractices ──
+  apexassertionsshouldincludemessage: "bestpractices",
+  apexunittestclassshouldhaveasserts: "bestpractices",
+  apexunittestclassshouldhaverunas: "bestpractices",
+  apexunittestshouldnotuseseealldatatrue: "bestpractices",
+  avoidglobalmodifier: "bestpractices",
+  avoidlogicintrigger: "bestpractices",
+  debugsshoulduselogginglevel: "bestpractices",
+  queueablewithoutfinalizer: "bestpractices",
+  unusedlocalvariable: "bestpractices",
+  // ── codestyle ──
+  annotationsnamingconventions: "codestyle",
   classnamingconventions: "codestyle",
+  fielddeclarationsshouldbeatstart: "codestyle",
   fieldnamingconventions: "codestyle",
+  forloopsmustusebraces: "codestyle",
   formalparameternamingconventions: "codestyle",
-  localvariablenamingconventions: "codestyle",
-  methodnamingconventions: "codestyle",
-  propertynamingconventions: "codestyle",
   ifelsestmtsmustusebraces: "codestyle",
   ifstmtsmustusebraces: "codestyle",
-  forloopsmustusebraces: "codestyle",
-  whileloopsmustusebraces: "codestyle",
+  localvariablenamingconventions: "codestyle",
+  methodnamingconventions: "codestyle",
   onedeclarationperline: "codestyle",
-  fielddeclarationsshouldbeatstart: "codestyle",
-  // design
+  propertynamingconventions: "codestyle",
+  whileloopsmustusebraces: "codestyle",
+  // ── design ──
+  avoiddeeplynestedifstmts: "design",
+  cognitivecomplexity: "design",
+  cyclomaticcomplexity: "design",
   excessiveclasslength: "design",
   excessiveparameterlist: "design",
   excessivepubliccount: "design",
-  cyclomaticcomplexity: "design",
-  cognitivecomplexity: "design",
-  toomanyfields: "design",
   ncssconstructorcount: "design",
   ncssmethodcount: "design",
   ncsstypecount: "design",
   stdcyclomaticcomplexity: "design",
-  avoiddeeplynestedifstmts: "design",
-  // errorprone
+  toomanyfields: "design",
+  unusedmethod: "design",
+  // ── documentation ──
+  apexdoc: "documentation",
+  // ── errorprone ──
   apexcsrf: "errorprone",
+  avoiddirectaccesstriggermap: "errorprone",
   avoidhardcodingid: "errorprone",
   avoidnonexistentannotations: "errorprone",
   emptycatchblock: "errorprone",
   emptyifstmt: "errorprone",
   emptystatementblock: "errorprone",
-  emptytrystmt: "errorprone",
+  emptytryorfinallyblock: "errorprone",
   emptywhilestmt: "errorprone",
+  inaccessibleauraenabledgetter: "errorprone",
   methodwithsamenameasenclosingclass: "errorprone",
   overridebothequalsandhashcode: "errorprone",
-  testmethodsmustbeinpublicclass: "errorprone",
-  // performance
+  testmethodsmustbeintestclasses: "errorprone",
+  typeshadowsbuiltinnamespace: "errorprone",
+  // ── performance ──
   avoiddmlstatementsinloops: "performance",
   avoidsoqlinloops: "performance",
   avoidsoslinloops: "performance",
-  operationwithlimitsinloop: "performance",
   eagerlyloadeddescribesobjectresult: "performance",
-  // security
+  operationwithlimitsinloop: "performance",
+  // ── security ──
   apexbadcrypto: "security",
   apexcrudviolation: "security",
   apexdangerousmethods: "security",
@@ -59,46 +80,45 @@ const PMD_APEX_CATEGORY: Record<string, string> = {
   apexsuggestusingnamedcred: "security",
   apexxssfromescapefalse: "security",
   apexxssfromurlparam: "security",
-  // bestpractices
-  apexassertionsshouldincludemessage: "bestpractices",
-  apexunittestclassshouldhaveasserts: "bestpractices",
-  apexunittestclassshouldhaverunas: "bestpractices",
-  apexunittestmethodshouldhaveisrunas: "bestpractices",
-  apexunittestshouldnotuseseealldatatrue: "bestpractices",
-  avoidglobalmodifier: "bestpractices",
-  avoidlogicintrigger: "bestpractices",
-  debugsshoulduselogginglevel: "bestpractices",
-  unusedlocalvariable: "bestpractices",
-  // documentation
-  apexdoc: "documentation",
 };
 
+/** PMD Visualforce rules (security only at present). */
+const PMD_VF_CATEGORY: Record<string, string> = {
+  vfcsrf: "security",
+  vfhtmlstyletagxss: "security",
+  vfunescapeel: "security",
+};
+
+/** Custom rules emitted by the lightweight fallback scanner. */
 const FALLBACK_RULE_DOCS: Record<string, string> = {
   noeval: "https://eslint.org/docs/latest/rules/no-eval",
   noinnerhtml:
     "https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-intro.html",
-  todocomment:
-    "https://pmd.github.io/pmd/pmd_rules_apex_errorprone.html#avoidtodocomment",
+  todocomment: `${PMD_DOCS_BASE}/pmd_rules_apex_errorprone.html`,
 };
 
 function isEslintRule(ruleName: string): boolean {
   // ESLint rules are lowercase, dash-separated (e.g. no-undef, no-unused-vars)
   // and may be namespaced (e.g. @lwc/lwc/no-async-operation).
-  return /^[a-z@][a-z0-9@/-]*-[a-z0-9/-]+$/.test(ruleName) && ruleName === ruleName.toLowerCase();
+  return (
+    /^[a-z@][a-z0-9@/-]*-[a-z0-9/-]+$/.test(ruleName) && ruleName === ruleName.toLowerCase()
+  );
 }
 
 /**
- * Resolves a best-effort documentation URL for a given finding's rule.
- * Returns undefined when no sensible link can be derived.
+ * Resolves a best-effort, rule-specific documentation URL for a finding.
+ * Returns undefined only when no sensible link can be derived.
  */
-export function ruleDocUrl(finding: Pick<AnalyzerFinding, "ruleName" | "metadataType">): string | undefined {
+export function ruleDocUrl(
+  finding: Pick<AnalyzerFinding, "ruleName" | "metadataType">,
+): string | undefined {
   const raw = finding.ruleName?.trim();
   if (!raw || raw === "UnknownRule") return undefined;
   const key = raw.toLowerCase();
 
   if (FALLBACK_RULE_DOCS[key]) return FALLBACK_RULE_DOCS[key];
 
-  // ESLint / LWC ESLint rules
+  // ESLint / LWC ESLint rules (JavaScript, LWC)
   if (isEslintRule(raw)) {
     if (raw.startsWith("@lwc/lwc/")) {
       const short = raw.replace("@lwc/lwc/", "");
@@ -113,14 +133,22 @@ export function ruleDocUrl(finding: Pick<AnalyzerFinding, "ruleName" | "metadata
     return `https://eslint.org/docs/latest/rules/${raw}`;
   }
 
-  // PMD Apex rules (PascalCase, no dashes)
-  const category = PMD_APEX_CATEGORY[key];
-  if (category) {
-    return `https://pmd.github.io/pmd/pmd_rules_apex_${category}.html#${key}`;
+  // PMD Apex rules (deep link to specific rule anchor)
+  const apexCategory = PMD_APEX_CATEGORY[key];
+  if (apexCategory) {
+    return `${PMD_DOCS_BASE}/pmd_rules_apex_${apexCategory}.html#${key}`;
   }
+
+  // PMD Visualforce rules
+  const vfCategory = PMD_VF_CATEGORY[key];
+  if (vfCategory) {
+    return `${PMD_DOCS_BASE}/pmd_rules_visualforce_${vfCategory}.html#${key}`;
+  }
+
+  // Unknown Apex-style rule (PascalCase): link to the Apex rule index so the
+  // user can still search, rather than returning nothing.
   if (finding.metadataType === "ApexClass" || /^[A-Z][A-Za-z0-9]+$/.test(raw)) {
-    // Unknown Apex rule — link to the Apex rule index.
-    return "https://pmd.github.io/pmd/pmd_rules_apex.html";
+    return `${PMD_DOCS_BASE}/pmd_rules_apex.html`;
   }
 
   return undefined;

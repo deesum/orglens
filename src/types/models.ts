@@ -27,6 +27,7 @@ export interface AnalyzerFinding {
   line?: number;
   metadataType: MetadataType;
   references: string[];
+  url?: string;
 }
 
 export interface MetadataNode {

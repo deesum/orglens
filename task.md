@@ -65,4 +65,7 @@
   - Added Java-unavailable fallback scanner so restricted runtimes still generate actionable findings.
   - Added rule documentation deep links (`src/report/ruleDocs.ts`): PMD Apex category pages, ESLint rule pages, LWC eslint plugin docs.
   - Added architect/team report features: Quick Wins (high-severity + low-effort), metadata-type filter, rule reference column, severity distribution, score breakdown, component hotspot chips, and CSV export.
+  - Discovered Salesforce Code Analyzer emits an exact per-violation `url`; now captured end-to-end (`AnalyzerFinding.url`) and preferred over the heuristic map so links point to the specific failing rule anchor (version-matched).
+  - Comprehensive PMD Apex rule->category map added as fallback for the lightweight scanner.
+  - Rewrote README.md as a complete first-time-user guide (audience, value, prerequisites + install steps, tool install, CLI/UI usage, features, modes, troubleshooting, command reference).
 - Reference Docs: `docs/config-reverse-engineer-agent/architecture.md`

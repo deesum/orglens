@@ -1,167 +1,384 @@
-# Config Reverse Engineer Agent
+# Config Reverse Engineer (CRE) Agent
 
-CLI for analyzing Salesforce metadata health, ranking debt priorities, and generating evidence-linked recommendations.
+> An AI-assisted Salesforce metadata health analyzer. Point it at a Salesforce
+> project and get a **Health Score**, a prioritized list of technical-debt
+> issues with **deep links to the exact rule documentation**, dependency
+> impact, remediation playbooks, and a Jira-ready backlog — in an interactive
+> HTML report or as JSON/Markdown for CI.
 
-## Dependencies
+---
 
-Required:
+## Table of Contents
 
-- Node.js 20+
-- Salesforce CLI (`sf`)
-- Salesforce Code Analyzer plugin (`@salesforce/sfdx-scanner`)
-- Java Runtime (JDK 17 recommended)
+1. [Who is this for?](#1-who-is-this-for)
+2. [What value does it provide?](#2-what-value-does-it-provide)
+3. [Feature overview](#3-feature-overview)
+4. [Prerequisites (and how to install each)](#4-prerequisites-and-how-to-install-each)
+5. [Install the CRE tool](#5-install-the-cre-tool)
+6. [Quick start (first run in 2 minutes)](#6-quick-start-first-run-in-2-minutes)
+7. [Using the Browser UI](#7-using-the-browser-ui)
+8. [Using the CLI](#8-using-the-cli)
+9. [Understanding the report](#9-understanding-the-report)
+10. [Run modes (local / CI / governance)](#10-run-modes-local--ci--governance)
+11. [AI recommendations (optional)](#11-ai-recommendations-optional)
+12. [Troubleshooting](#12-troubleshooting)
+13. [Command reference](#13-command-reference)
 
-Optional (for recommendation generation):
+---
 
-- `OPENAI_API_KEY`
-- `ANTHROPIC_API_KEY`
+## 1. Who is this for?
 
-### Install dependencies
+| Persona | How they use CRE |
+| --- | --- |
+| **Technical Architect** | Rapid health assessment of an unfamiliar or inherited org, identify hotspots, justify refactoring with evidence, set governance baselines. |
+| **System Integrator (SI) / Delivery Lead** | Generate a prioritized remediation backlog, export to Jira, assign by team/release train, track trend across sprints. |
+| **Salesforce Developers** | See exactly which rule failed, where, why it matters, how to fix it, with a one-click link to the official rule documentation. |
+| **Delivery / Engineering Managers** | Track a single Health Score over time, gate pull requests on quality thresholds, report progress to stakeholders. |
+| **QA / Release Engineers** | Wire CRE into CI to fail or warn when code quality regresses. |
 
+## 2. What value does it provide?
+
+- **Cut "archaeology" time.** Architects normally spend hours digging through
+  metadata to understand debt. CRE produces a structured assessment in seconds.
+- **Prioritization, not just a wall of findings.** Every issue is ranked by
+  severity × blast radius × effort so teams fix the things that matter first.
+- **Actionable, evidence-linked guidance.** Each finding shows *what, where,
+  why, and how to fix* — plus a deep link to the exact rule documentation.
+- **Quick Wins.** Automatically surfaces high-severity / low-effort items for
+  the best return on investment.
+- **Governance over time.** Snapshots + trend deltas show whether quality is
+  improving or regressing across releases.
+- **Plug into delivery.** Jira-ready CSV backlog with owner team and release
+  train tags; CI gate for pull requests.
+
+## 3. Feature overview
+
+**Analysis engine**
+- Salesforce Code Analyzer (PMD + ESLint) integration
+- Built-in **lightweight fallback scanner** (works even without Java — see note)
+- Apex, LWC, Flow, Aura, Custom Objects/Fields, Permission Sets, Flexipages,
+  Custom Labels, Static Resources, Visualforce discovery
+- Dependency graph + **blast-radius** impact scoring
+- Weighted **Health Score** with category breakdown (security,
+  maintainability, reliability, performance, operability)
+- Confidence metric for analysis coverage
+
+**Interactive HTML report**
+- Colour-coded KPI dashboard and **severity distribution** bar
+- **Rule Summary** with deep links to each rule's official documentation
+- AI/heuristic **Recommendations** cards
+- **Quick Wins** (high impact, low effort)
+- **All Issues** table: severity badges, component column, compact paths, and
+  per-row rule documentation links
+- **Filtering**: by search, severity, effort, metadata type, and
+  click-to-filter component hotspot chips — combine all of them with
+  dismissable filter tags
+- **Sortable** columns + **CSV export** of the filtered view
+- **Domain Playbooks** (Apex / LWC / Flow remediation steps)
+- **Trend Delta** vs previous snapshot
+- **Jira Backlog** summary
+
+**Delivery integrations**
+- JSON / Markdown / HTML output
+- Jira-ready CSV backlog export (`--backlog-out`)
+- CI gate with configurable threshold
+- Governance snapshots for trend tracking
+- Local Browser UI for point-and-click scans
+
+> **Note on coverage:** The full PMD + ESLint rule set requires Java + the
+> Salesforce Code Analyzer plugin. If Java is unavailable, CRE automatically
+> falls back to a lightweight regex scanner so you still get actionable output
+> (with reduced coverage). Install Java for complete results.
+
+---
+
+## 4. Prerequisites (and how to install each)
+
+| # | Prerequisite | Required? | Purpose |
+| - | --- | --- | --- |
+| 1 | **Node.js 20+** | ✅ Required | Runs the CRE CLI/UI |
+| 2 | **Git** | ✅ Required | Clone the repo |
+| 3 | **Java (JDK 17)** | ⭐ Strongly recommended | Enables full PMD/ESLint scanning |
+| 4 | **Salesforce CLI (`sf`)** | ⭐ Recommended | Provides the Code Analyzer plugin |
+| 5 | **Code Analyzer plugin** | ⭐ Recommended | The full rule engine |
+| 6 | **OpenAI / Anthropic key** | ◻ Optional | AI-written recommendations |
+
+### 4.1 Node.js 20+
+
+**macOS (Homebrew):**
 ```bash
-# Salesforce scanner plugin
-sf plugins install @salesforce/sfdx-scanner
+brew install node
+```
+**Windows:** download the LTS installer from [nodejs.org](https://nodejs.org/), or:
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+**Linux / cross-platform (nvm):**
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm install 20 && nvm use 20
+```
+Verify:
+```bash
+node -v   # expect v20.x or higher
+```
 
-# Java (macOS/Homebrew)
+### 4.2 Git
+
+**macOS:** `brew install git` (or `xcode-select --install`)
+**Windows:** `winget install Git.Git`
+**Linux:** `sudo apt install git` / `sudo dnf install git`
+```bash
+git --version
+```
+
+### 4.3 Java (JDK 17) — for full scanning
+
+**macOS (Homebrew):**
+```bash
 brew install openjdk@17
-sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk \
+  /Library/Java/JavaVirtualMachines/openjdk-17.jdk
 echo 'export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
-
-### Verify dependencies
-
+**Windows:** `winget install EclipseAdoptium.Temurin.17.JDK`
+**Linux:** `sudo apt install openjdk-17-jdk`
+Verify:
 ```bash
-node -v
-sf --version
-sf plugins | rg sfdx-scanner
-java -version
+java -version   # expect "17.x"
 ```
 
-## Installation
+### 4.4 Salesforce CLI
 
 ```bash
+npm install -g @salesforce/cli
+sf --version
+```
+
+### 4.5 Salesforce Code Analyzer plugin
+
+```bash
+sf plugins install @salesforce/sfdx-scanner
+sf plugins        # confirm sfdx-scanner is listed
+```
+
+### 4.6 (Optional) AI provider key
+
+Set whichever you have:
+```bash
+export OPENAI_API_KEY="sk-..."
+# or
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+---
+
+## 5. Install the CRE tool
+
+```bash
+# 1. Clone
+git clone https://github.com/deesum/config-reverse-engineer-agent.git
+cd config-reverse-engineer-agent
+
+# 2. Install dependencies
 npm install
+
+# 3. Build
 npm run build
+
+# 4. Make the `cre-agent` command available globally
 npm link
 ```
 
-Global install (when published):
-
+Verify the install:
 ```bash
-npm i -g config-reverse-engineer
+cre-agent --version
+cre-agent --help
 ```
 
-Quickstart for your org alias (`fslspecialedition`):
+---
 
-- `docs/quickstart.md`
+## 6. Quick start (first run in 2 minutes)
 
-## Usage Modes
-
-### Local architect mode
-
-Run one-off assessment from repo/package:
+Point CRE at any Salesforce project folder. It auto-detects metadata roots
+(`force-app/main/default`, `apps/*/force-app/main/default`, etc.) — you do
+**not** need to point at the exact metadata folder.
 
 ```bash
-cre-agent analyze --repo . --package manifest/config-reverse-engineer-agent/package.xml --target-org myorg --format html --mode local
+cre-agent analyze --repo "/path/to/your/salesforce-project" --format html
 ```
 
-### CI gate mode
-
-Use in PR checks and fail or warn when score drops:
+This writes `cre-report.html` (and `cre-backlog.csv`) into the project folder.
+Open the HTML file in any browser:
 
 ```bash
-cre-agent analyze --repo . --format json --mode ci --threshold 70
+open cre-report.html        # macOS
+# or just double-click it
 ```
 
-### Program governance mode
+That's it. The minimum required input is `--repo`.
 
-Schedule daily/weekly and persist snapshots:
+---
+
+## 7. Using the Browser UI
+
+Prefer point-and-click? Launch the local UI:
 
 ```bash
-cre-agent analyze --repo . --format md --mode governance
+cre-agent ui --repo "/path/to/your/salesforce-project" --port 4173
 ```
 
-### Run from Browser UI (component selection)
+Open **http://127.0.0.1:4173** and you can:
 
-Launch local UI server:
+- Enter / confirm the project path (only required field)
+- Pick component **types** (Apex, LWC, Flow, and more) — selecting a type
+  auto-selects its components
+- Optionally narrow to specific **component names** (with search + select-all)
+- See the live list of **selected components**
+- Choose output format, run **mode**, CI threshold, and AI provider
+- Set `package.xml`, target org, team, release train, and backlog path under
+  **Advanced options**
+- Click **Run Scanner** and preview the report inline
 
+> Tip: if the UI looks stale after an update, hard refresh (`Cmd/Ctrl+Shift+R`).
+
+---
+
+## 8. Using the CLI
+
+**Basic:**
 ```bash
-cre-agent ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --package "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/manifest/force-app-main-default.xml" --target-org fslspecialedition --port 4173
+cre-agent analyze --repo . --format html
 ```
 
-Open:
-
-- `http://127.0.0.1:4173`
-
-In the UI you can:
-
-- choose component types (Apex/LWC/Flow)
-- optionally select specific component names
-- run scanner and preview report directly
-- switch between local / ci / governance modes
-- set CI threshold, provider, and backlog export options in Advanced settings
-
-### Supported component types
-
-- `ApexClass`
-- `LightningComponentBundle` (LWC)
-- `Flow`
-
-### Why package.xml and target org alias are optional
-
-- `package.xml` is only used to narrow scan scope to specific metadata members.
-- `target-org` is optional for now; current analyzer operates on local metadata files.
-- Minimal input required is just `--repo` (or repo field in UI).
-
-## What You Receive
-
-- Overall Health Score
-- Top 10 prioritized debt findings with "fix now" rationale
-- Dependency impact graph summary
-- Human-readable recommendations with finding evidence IDs
-- Domain-specific remediation playbooks (Apex, LWC, Flow)
-- Trend deltas against previous governance snapshots
-- Jira-ready backlog export with team and release-train tags
-- Exportable JSON/Markdown/HTML artifacts
-
-## Example User Journey
-
+**Scope to specific component types/names:**
 ```bash
-sf org login web
-cre-agent analyze --repo . --package package.xml --target-org myorg --format html
-```
-
-### Backlog Export (Jira-ready)
-
-```bash
-cre-agent analyze \
-  --repo . \
-  --package package.xml \
-  --target-org myorg \
-  --format html \
-  --team "FSL-Architecture" \
-  --release-train "R2" \
-  --backlog-out "./cre-backlog.csv"
-```
-
-### Component-scoped CLI example
-
-```bash
-cre-agent analyze \
-  --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" \
-  --package "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/manifest/force-app-main-default.xml" \
-  --target-org fslspecialedition \
-  --format html \
+cre-agent analyze --repo . --format html \
   --component-types ApexClass,Flow \
   --components DistanceCalculator,FSL_Capture_WOLI_Location
 ```
 
-## Deploy (Salesforce Metadata Only)
+**Jira-ready backlog with ownership tags:**
+```bash
+cre-agent analyze --repo . --format html \
+  --team "FSL-Architecture" --release-train "R2" \
+  --backlog-out "./cre-backlog.csv"
+```
 
-Use targeted deploy commands only:
+**JSON for downstream tooling:**
+```bash
+cre-agent analyze --repo . --format json --out ./cre-report.json
+```
+
+---
+
+## 9. Understanding the report
+
+The HTML report is organized top-to-bottom for an architect's workflow:
+
+1. **Overview** — Health Score, total findings, confidence, scanner status,
+   dependency graph size, effort mix, severity distribution, score breakdown by
+   category, and most-affected component chips.
+2. **Rule Summary** — every rule that fired, its count, max severity, example
+   files, and a **"View docs ↗"** link to the exact rule reference.
+3. **Recommendations** — AI or heuristic remediation suggestions linked to
+   evidence findings.
+4. **Quick Wins** — high-severity, low-effort issues to tackle first.
+5. **All Issues** — the full prioritized table. Each row's rule name links to
+   its specific documentation. Filter by search/severity/effort/type/component
+   and export the filtered set to CSV.
+6. **Playbooks** — domain-specific fix + verification steps.
+7. **Trend Delta** — score and finding changes vs the last snapshot.
+8. **Backlog** — count of Jira-importable items.
+
+**Health Score bands:** `85+` Healthy · `70–84` Needs Attention · `<70` At Risk.
+
+---
+
+## 10. Run modes (local / CI / governance)
+
+**Local (default)** — one-off architecture assessment:
+```bash
+cre-agent analyze --repo . --format html --mode local
+```
+
+**CI gate** — fail/warn when score drops below a threshold (great for PRs):
+```bash
+cre-agent analyze --repo . --format json --mode ci --threshold 70
+# exit code is non-zero when the gate fails
+```
+
+**Governance** — persist snapshots so trend deltas accumulate over time:
+```bash
+cre-agent analyze --repo . --format md --mode governance
+```
+
+---
+
+## 11. AI recommendations (optional)
+
+Without an API key, CRE generates solid heuristic recommendations. With a key,
+it produces richer, evidence-linked guidance:
 
 ```bash
-sf project deploy start --source-dir apps/config-reverse-engineer-agent/force-app --target-org <alias>
-sf project deploy start --manifest manifest/config-reverse-engineer-agent/package.xml --target-org <alias>
+export OPENAI_API_KEY="sk-..."      # or ANTHROPIC_API_KEY
+cre-agent analyze --repo . --format html --provider openai
 ```
+
+Recommendations are always tied to specific finding IDs to keep them grounded
+(no hallucinated advice).
+
+---
+
+## 12. Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Scanner Status: failed` / "Unable to locate a Java Runtime" | Java not installed/on PATH | Install JDK 17 ([§4.3](#43-java-jdk-17--for-full-scanning)); CRE still runs the fallback scanner meanwhile |
+| Few findings on a large org | Only the fallback scanner ran | Install Java + `sfdx-scanner` for full PMD/ESLint coverage |
+| `cre-agent: command not found` | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal |
+| UI shows an old version | Stale server process | Stop the old `cre-agent ui` process, restart it, hard refresh the browser |
+| No components found | Wrong project path | Pass the project root; CRE auto-detects `force-app/main/default` underneath |
+| Recommendations empty | No API key | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional) |
+
+---
+
+## 13. Command reference
+
+### `cre-agent analyze`
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--repo <path>` | *(required)* | Project root (metadata roots auto-detected) |
+| `--package <path>` | — | `package.xml` to narrow scan scope |
+| `--target-org <alias>` | — | Salesforce org alias (reserved for retrieve flows) |
+| `--format <json\|md\|html>` | `html` | Output format |
+| `--out <path>` | `cre-report.<fmt>` | Report output path |
+| `--mode <local\|ci\|governance>` | `local` | Run mode |
+| `--config <path>` | — | Agent config YAML |
+| `--provider <openai\|anthropic>` | — | LLM provider for recommendations |
+| `--threshold <number>` | — | CI fail threshold (mode=ci) |
+| `--team <name>` | `Architecture` | Owner team for backlog export |
+| `--release-train <name>` | `R1` | Release train for backlog export |
+| `--backlog-out <path>` | `cre-backlog.csv` | Jira-ready CSV output path |
+| `--component-types <list>` | — | Comma-separated types to include |
+| `--components <list>` | — | Comma-separated component names to include |
+
+### `cre-agent ui`
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--repo <path>` | current dir | Project root |
+| `--package <path>` | — | `package.xml` to narrow scope |
+| `--target-org <alias>` | — | Salesforce org alias |
+| `--port <number>` | `4173` | UI server port |
+
+---
+
+## Project documentation
+
+- `docs/quickstart.md` — condensed quick start
+- `docs/config-reverse-engineer-agent/architecture.md` — architecture
+- `docs/config-reverse-engineer-agent/github-setup.md` — GitHub setup
+- `docs/config-reverse-engineer-agent/agent-operating-instructions.md` — agent operating model

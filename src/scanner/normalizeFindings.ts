@@ -8,6 +8,7 @@ interface RawFinding {
   category?: string;
   fileName?: string;
   line?: number;
+  url?: string;
 }
 
 function normalizeSeverity(value: number | string | undefined): Severity {
@@ -57,7 +58,7 @@ export function normalizeFindings(rawFindings: RawFinding[]): AnalyzerFinding[] 
     return {
       id: `finding-${index + 1}`,
       ruleName: f.ruleName ?? f.rule ?? "UnknownRule",
-      message: f.message ?? "No message provided",
+      message: (f.message ?? "No message provided").trim(),
       severity: normalizeSeverity(f.severity),
       category: f.category ?? "maintainability",
       filePath,
@@ -65,6 +66,7 @@ export function normalizeFindings(rawFindings: RawFinding[]): AnalyzerFinding[] 
       line: f.line,
       metadataType,
       references: [],
+      url: f.url,
     };
   });
 }
