@@ -1,5 +1,6 @@
-# Config Reverse Engineer (CRE) Agent
+# 🔍 OrgLens
 
+> **Salesforce Metadata Health & Tech-Debt Intelligence.**
 > An AI-assisted Salesforce metadata health analyzer. Point it at a Salesforce
 > project and get a **Health Score**, a prioritized list of technical-debt
 > issues with **deep links to the exact rule documentation**, dependency
@@ -187,14 +188,14 @@ npm install
 # 3. Build
 npm run build
 
-# 4. Make the `cre-agent` command available globally
+# 4. Make the `orglens` command available globally
 npm link
 ```
 
 Verify the install:
 ```bash
-cre-agent --version
-cre-agent --help
+orglens --version
+orglens --help
 ```
 
 ---
@@ -206,14 +207,14 @@ Point CRE at any Salesforce project folder. It auto-detects metadata roots
 **not** need to point at the exact metadata folder.
 
 ```bash
-cre-agent analyze --repo "/path/to/your/salesforce-project" --format html
+orglens analyze --repo "/path/to/your/salesforce-project" --format html
 ```
 
-This writes `cre-report.html` (and `cre-backlog.csv`) into the project folder.
+This writes `orglens-report.html` (and `orglens-backlog.csv`) into the project folder.
 Open the HTML file in any browser:
 
 ```bash
-open cre-report.html        # macOS
+open orglens-report.html        # macOS
 # or just double-click it
 ```
 
@@ -226,7 +227,7 @@ That's it. The minimum required input is `--repo`.
 Prefer point-and-click? Launch the local UI:
 
 ```bash
-cre-agent ui --repo "/path/to/your/salesforce-project" --port 4173
+orglens ui --repo "/path/to/your/salesforce-project" --port 4173
 ```
 
 Open **http://127.0.0.1:4173** and you can:
@@ -249,26 +250,26 @@ Open **http://127.0.0.1:4173** and you can:
 
 **Basic:**
 ```bash
-cre-agent analyze --repo . --format html
+orglens analyze --repo . --format html
 ```
 
 **Scope to specific component types/names:**
 ```bash
-cre-agent analyze --repo . --format html \
+orglens analyze --repo . --format html \
   --component-types ApexClass,Flow \
   --components DistanceCalculator,FSL_Capture_WOLI_Location
 ```
 
 **Jira-ready backlog with ownership tags:**
 ```bash
-cre-agent analyze --repo . --format html \
+orglens analyze --repo . --format html \
   --team "FSL-Architecture" --release-train "R2" \
-  --backlog-out "./cre-backlog.csv"
+  --backlog-out "./orglens-backlog.csv"
 ```
 
 **JSON for downstream tooling:**
 ```bash
-cre-agent analyze --repo . --format json --out ./cre-report.json
+orglens analyze --repo . --format json --out ./orglens-report.json
 ```
 
 ---
@@ -300,18 +301,18 @@ The HTML report is organized top-to-bottom for an architect's workflow:
 
 **Local (default)** — one-off architecture assessment:
 ```bash
-cre-agent analyze --repo . --format html --mode local
+orglens analyze --repo . --format html --mode local
 ```
 
 **CI gate** — fail/warn when score drops below a threshold (great for PRs):
 ```bash
-cre-agent analyze --repo . --format json --mode ci --threshold 70
+orglens analyze --repo . --format json --mode ci --threshold 70
 # exit code is non-zero when the gate fails
 ```
 
 **Governance** — persist snapshots so trend deltas accumulate over time:
 ```bash
-cre-agent analyze --repo . --format md --mode governance
+orglens analyze --repo . --format md --mode governance
 ```
 
 ---
@@ -323,7 +324,7 @@ it produces richer, evidence-linked guidance:
 
 ```bash
 export OPENAI_API_KEY="sk-..."      # or ANTHROPIC_API_KEY
-cre-agent analyze --repo . --format html --provider openai
+orglens analyze --repo . --format html --provider openai
 ```
 
 Recommendations are always tied to specific finding IDs to keep them grounded
@@ -337,8 +338,8 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 | --- | --- | --- |
 | `Scanner Status: failed` / "Unable to locate a Java Runtime" | Java not installed/on PATH | Install JDK 17 ([§4.3](#43-java-jdk-17--for-full-scanning)); CRE still runs the fallback scanner meanwhile |
 | Few findings on a large org | Only the fallback scanner ran | Install Java + `sfdx-scanner` for full PMD/ESLint coverage |
-| `cre-agent: command not found` | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal |
-| UI shows an old version | Stale server process | Stop the old `cre-agent ui` process, restart it, hard refresh the browser |
+| `orglens: command not found` | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal |
+| UI shows an old version | Stale server process | Stop the old `orglens ui` process, restart it, hard refresh the browser |
 | No components found | Wrong project path | Pass the project root; CRE auto-detects `force-app/main/default` underneath |
 | Recommendations empty | No API key | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional) |
 
@@ -346,7 +347,7 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 
 ## 13. Command reference
 
-### `cre-agent analyze`
+### `orglens analyze`
 
 | Option | Default | Description |
 | --- | --- | --- |
@@ -354,18 +355,18 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 | `--package <path>` | — | `package.xml` to narrow scan scope |
 | `--target-org <alias>` | — | Salesforce org alias (reserved for retrieve flows) |
 | `--format <json\|md\|html>` | `html` | Output format |
-| `--out <path>` | `cre-report.<fmt>` | Report output path |
+| `--out <path>` | `orglens-report.<fmt>` | Report output path |
 | `--mode <local\|ci\|governance>` | `local` | Run mode |
 | `--config <path>` | — | Agent config YAML |
 | `--provider <openai\|anthropic>` | — | LLM provider for recommendations |
 | `--threshold <number>` | — | CI fail threshold (mode=ci) |
 | `--team <name>` | `Architecture` | Owner team for backlog export |
 | `--release-train <name>` | `R1` | Release train for backlog export |
-| `--backlog-out <path>` | `cre-backlog.csv` | Jira-ready CSV output path |
+| `--backlog-out <path>` | `orglens-backlog.csv` | Jira-ready CSV output path |
 | `--component-types <list>` | — | Comma-separated types to include |
 | `--components <list>` | — | Comma-separated component names to include |
 
-### `cre-agent ui`
+### `orglens ui`
 
 | Option | Default | Description |
 | --- | --- | --- |
@@ -375,6 +376,12 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 | `--port <number>` | `4173` | UI server port |
 
 ---
+
+## License
+
+License is currently **TBD** (`UNLICENSED`) pending confirmation of the
+applicable open-source policy. Until a license is added, no usage rights are
+granted by default — contact the author before reuse.
 
 ## Project documentation
 

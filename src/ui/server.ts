@@ -27,7 +27,7 @@ function htmlPage(defaults: UiOptions): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CRE Scanner UI</title>
+  <title>OrgLens — Scanner UI</title>
   <style>
     body { font-family: Inter, system-ui, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
     .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
@@ -46,7 +46,7 @@ function htmlPage(defaults: UiOptions): string {
 </head>
 <body>
   <main class="container">
-    <h1>Config Reverse Engineer UI</h1>
+    <h1>🔍 OrgLens — Scanner UI</h1>
     <p class="small">Run scanner with minimal input. Required: project path only. App auto-detects metadata roots.</p>
     <section class="card">
       <div class="grid">
@@ -363,7 +363,7 @@ export function startUiServer(opts: UiOptions): void {
         const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
         const repo = path.resolve(`${body.repo ?? opts.repo}`);
         const format = `${body.format ?? "html"}`;
-        const reportPath = path.resolve(repo, `ui-cre-report.${format === "md" ? "md" : format}`);
+        const reportPath = path.resolve(process.cwd(), `orglens-report.${format === "md" ? "md" : format}`);
         await analyzeCommand({
           repo,
           packagePath: body.packagePath ? path.resolve(`${body.packagePath}`) : opts.packagePath,
@@ -409,6 +409,6 @@ export function startUiServer(opts: UiOptions): void {
   });
 
   server.listen(opts.port, "127.0.0.1", () => {
-    console.log(`CRE UI available at http://127.0.0.1:${opts.port}`);
+    console.log(`OrgLens UI available at http://127.0.0.1:${opts.port}`);
   });
 }

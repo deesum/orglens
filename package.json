@@ -1,10 +1,18 @@
 {
-  "name": "config-reverse-engineer-agent",
+  "name": "orglens",
   "version": "0.1.0",
-  "description": "CLI for Salesforce metadata health scoring and debt prioritization.",
+  "description": "OrgLens — AI-powered Salesforce metadata health and tech-debt analyzer (Health Score, prioritized findings with rule docs, dependency impact, Jira-ready backlog).",
   "main": "dist/cli.js",
   "bin": {
-    "cre-agent": "dist/cli.js"
+    "orglens": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "agent.config.example.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -14,15 +22,28 @@
     "format": "prettier --write \"**/*.{ts,js,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md,yml,yaml}\"",
     "prettier:verify": "npm run format:check",
-    "analyze:sample": "node dist/cli.js analyze --repo . --format json --mode local --out .cre-sample-report.json"
+    "prepublishOnly": "npm run build",
+    "analyze:sample": "node dist/cli.js analyze --repo . --format json --mode local --out .orglens-sample-report.json"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/deesum/config-reverse-engineer-agent.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "salesforce",
+    "metadata",
+    "technical-debt",
+    "code-analysis",
+    "pmd",
+    "code-analyzer",
+    "apex",
+    "lwc",
+    "health-score",
+    "devops",
+    "cli"
+  ],
+  "author": "Deepak Sumra",
+  "license": "UNLICENSED",
   "type": "module",
   "bugs": {
     "url": "https://github.com/deesum/config-reverse-engineer-agent/issues"

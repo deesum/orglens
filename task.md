@@ -68,4 +68,5 @@
   - Discovered Salesforce Code Analyzer emits an exact per-violation `url`; now captured end-to-end (`AnalyzerFinding.url`) and preferred over the heuristic map so links point to the specific failing rule anchor (version-matched).
   - Comprehensive PMD Apex rule->category map added as fallback for the lightweight scanner.
   - Rewrote README.md as a complete first-time-user guide (audience, value, prerequisites + install steps, tool install, CLI/UI usage, features, modes, troubleshooting, command reference).
+  - Rebranded to OrgLens (CLI `orglens`); added package.json metadata, CONTRIBUTING.md, CHANGELOG.md; license held as UNLICENSED pending policy confirmation.
 - Reference Docs: `docs/config-reverse-engineer-agent/architecture.md`

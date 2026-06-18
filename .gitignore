@@ -9,9 +9,19 @@ coverage/
 *.key
 *.crt
 .DS_Store
+# OrgLens generated artifacts
+.orglens-snapshots/
 .cre-snapshots/
+.orglens-scanner-output.json
+.cre-scanner-output.json
+.orglens-sample-report.json
 .cre-sample-report.json
+orglens-report.json
+orglens-report.html
+orglens-report.md
+orglens-backlog.csv
 cre-report.json
 cre-report.html
+cre-report.md
 cre-report-forceapp.json
 cre-backlog.csv

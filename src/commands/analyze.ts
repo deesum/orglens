@@ -27,7 +27,7 @@ import { detectMetadataRoots } from "../utils/scanRoots.js";
 
 function resolveOutputPath(repoPath: string, requested?: string, format: OutputFormat = "json"): string {
   if (requested) return path.resolve(requested);
-  return path.resolve(repoPath, `cre-report.${format === "md" ? "md" : format}`);
+  return path.resolve(repoPath, `orglens-report.${format === "md" ? "md" : format}`);
 }
 
 function toFormat(result: AnalysisResult, format: OutputFormat): string {
@@ -159,7 +159,7 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
 
   const backlogOutputPath =
     options.backlogOut ??
-    path.resolve(repoPath, "cre-backlog.csv");
+    path.resolve(repoPath, "orglens-backlog.csv");
   writeBacklogCsv(backlog, backlogOutputPath);
   console.log(`Backlog export written to ${backlogOutputPath}`);
 

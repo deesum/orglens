@@ -1,6 +1,6 @@
 # Quickstart
 
-This guide shows how to run `cre-agent` against your Salesforce org alias `fslspecialedition`.
+This guide shows how to run `orglens` against your Salesforce org alias `fslspecialedition`.
 
 ## 1) Prerequisites
 
@@ -24,7 +24,7 @@ npm link
 Verify:
 
 ```bash
-cre-agent --help
+orglens --help
 ```
 
 ## 3) Authenticate Salesforce CLI (org alias)
@@ -44,7 +44,7 @@ sf org list
 ## 4) Run local architect mode (HTML report)
 
 ```bash
-cre-agent analyze \
+orglens analyze \
   --repo . \
   --package manifest/config-reverse-engineer-agent/package.xml \
   --target-org fslspecialedition \
@@ -54,18 +54,18 @@ cre-agent analyze \
 
 Output file defaults to:
 
-- `cre-report.html`
+- `orglens-report.html`
 
 Minimal run (no package, no org alias):
 
 ```bash
-cre-agent analyze --repo . --format html --mode local
+orglens analyze --repo . --format html --mode local
 ```
 
 ## 5) Run CI gate mode (PR threshold enforcement)
 
 ```bash
-cre-agent analyze \
+orglens analyze \
   --repo . \
   --target-org fslspecialedition \
   --format json \
@@ -76,12 +76,12 @@ cre-agent analyze \
 Behavior:
 
 - exits non-zero when score is below threshold
-- writes JSON report (`cre-report.json` by default)
+- writes JSON report (`orglens-report.json` by default)
 
 ## 6) Run governance mode (scheduled snapshots)
 
 ```bash
-cre-agent analyze \
+orglens analyze \
   --repo . \
   --target-org fslspecialedition \
   --format md \
@@ -90,14 +90,14 @@ cre-agent analyze \
 
 Outputs:
 
-- `cre-report.md`
+- `orglens-report.md`
 - snapshot JSON files in `.cre-snapshots/`
 
 ## 7) Pick LLM provider (optional)
 
 ```bash
-cre-agent analyze --repo . --target-org fslspecialedition --format md --provider openai
-cre-agent analyze --repo . --target-org fslspecialedition --format md --provider anthropic
+orglens analyze --repo . --target-org fslspecialedition --format md --provider openai
+orglens analyze --repo . --target-org fslspecialedition --format md --provider anthropic
 ```
 
 ## 8) Typical execution pattern for architects
@@ -111,7 +111,7 @@ cre-agent analyze --repo . --target-org fslspecialedition --format md --provider
 ## 10) Browser UI (minimal input)
 
 ```bash
-cre-agent ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --port 4173
+orglens ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --port 4173
 ```
 
 Then open `http://127.0.0.1:4173`, load components, choose scope, and run.
@@ -119,14 +119,14 @@ Then open `http://127.0.0.1:4173`, load components, choose scope, and run.
 ## 9) Export Jira-ready backlog
 
 ```bash
-cre-agent analyze \
+orglens analyze \
   --repo . \
   --package manifest/config-reverse-engineer-agent/package.xml \
   --target-org fslspecialedition \
   --format html \
   --team "FSL-Architecture" \
   --release-train "R2" \
-  --backlog-out "./cre-backlog.csv"
+  --backlog-out "./orglens-backlog.csv"
 ```
 
 The generated CSV includes key, summary, severity, effort, owner team, release train, and recommendation fields for backlog import.

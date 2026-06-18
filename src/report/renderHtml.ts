@@ -305,7 +305,7 @@ export function renderHtml(result: AnalysisResult): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CRE — Config Reverse Engineer Report</title>
+  <title>OrgLens — Salesforce Metadata Health Report</title>
   <style>
     :root {
       --bg:      #060d1f;
@@ -445,7 +445,7 @@ export function renderHtml(result: AnalysisResult): string {
 </head>
 <body>
   <nav class="topbar">
-    <span class="brand">⚡ CRE</span>
+    <span class="brand">🔍 OrgLens</span>
     <a href="#overview">Overview</a>
     <a href="#rules">Rule Summary</a>
     <a href="#recommendations">Recommendations</a>
@@ -459,8 +459,8 @@ export function renderHtml(result: AnalysisResult): string {
 
     <!-- ═══ OVERVIEW ═══════════════════════════════════════════════════════ -->
     <section id="overview">
-      <h1>Config Reverse Engineer Report</h1>
-      <p class="subtitle">Metadata health analysis · ${timestamp}</p>
+      <h1>OrgLens — Metadata Health Report</h1>
+      <p class="subtitle">AI-powered Salesforce metadata health analysis · ${timestamp}</p>
 
       <div class="kpi-grid">
         <article class="card">
@@ -644,7 +644,7 @@ export function renderHtml(result: AnalysisResult): string {
       <h2>Jira Backlog Export</h2>
       <article class="card">
         <p style="color:var(--text);font-size:15px;font-weight:700">${result.backlog.length} backlog items ready</p>
-        <p style="margin-top:8px">Run with <code style="background:var(--panel);padding:2px 7px;border-radius:4px">--backlog-out ./cre-backlog.csv</code> to export a Jira-importable CSV.</p>
+        <p style="margin-top:8px">Run with <code style="background:var(--panel);padding:2px 7px;border-radius:4px">--backlog-out ./orglens-backlog.csv</code> to export a Jira-importable CSV.</p>
       </article>
     </section>
   </main>

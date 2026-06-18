@@ -7,8 +7,8 @@ import { startUiServer } from "./ui/server.js";
 const program = new Command();
 
 program
-  .name("cre-agent")
-  .description("Config Reverse Engineer CLI for Salesforce metadata health analysis")
+  .name("orglens")
+  .description("OrgLens — AI-powered Salesforce metadata health and tech-debt analyzer")
   .version("0.1.0");
 
 program
