@@ -1,4 +1,4 @@
-import { AnalysisResult } from "../types/models.js";
+import { AnalysisResult, AnalyzerFinding } from "../types/models.js";
 import { recommendedFixForFinding } from "./fixGuidance.js";
 
 function escapeHtml(input: string): string {
@@ -16,57 +16,161 @@ function compactPath(filePath: string): string {
   return `.../${parts.slice(-4).join("/")}`;
 }
 
+function compactKnownPaths(text: string, paths: string[]): string {
+  let output = text;
+  for (const filePath of paths) {
+    if (!filePath) continue;
+    output = output.split(filePath).join(compactPath(filePath));
+  }
+  return output;
+}
+
+function deriveComponentName(finding: AnalyzerFinding): string {
+  if (finding.componentName) return finding.componentName;
+  const parts = finding.filePath.replaceAll("\\", "/").split("/");
+  const file = parts[parts.length - 1] ?? "";
+  return file.replace(/\.(cls|trigger|js|html|css|flow-meta\.xml|object-meta\.xml|field-meta\.xml)$/, "");
+}
+
+function severityBadge(sev: string): string {
+  const cls =
+    sev === "critical" ? "sev-critical"
+    : sev === "high" ? "sev-high"
+    : sev === "medium" ? "sev-medium"
+    : "sev-low";
+  return `<span class="badge ${cls}">${escapeHtml(sev.toUpperCase())}</span>`;
+}
+
 export function renderHtml(result: AnalysisResult): string {
   const findingsById = new Map(result.findings.map((f) => [f.id, f]));
-  const ruleSummaryMap = new Map<string, { count: number; severity: string; files: Set<string> }>();
+  const knownPaths = [...new Set(result.findings.map((f) => f.filePath))].sort(
+    (a, b) => b.length - a.length,
+  );
+
+  // ── Rule summary ──────────────────────────────────────────────────────────
+  const ruleSummaryMap = new Map<
+    string,
+    { count: number; severity: string; files: Set<string> }
+  >();
   for (const finding of result.findings) {
-    const current = ruleSummaryMap.get(finding.ruleName) ?? {
+    const cur = ruleSummaryMap.get(finding.ruleName) ?? {
       count: 0,
       severity: finding.severity.toUpperCase(),
       files: new Set<string>(),
     };
-    current.count += 1;
-    current.files.add(finding.filePath);
-    if (finding.severity === "critical") current.severity = "CRITICAL";
-    else if (finding.severity === "high" && current.severity !== "CRITICAL") current.severity = "HIGH";
+    cur.count += 1;
+    cur.files.add(finding.filePath);
+    if (finding.severity === "critical") cur.severity = "CRITICAL";
+    else if (finding.severity === "high" && cur.severity !== "CRITICAL") cur.severity = "HIGH";
     else if (
       finding.severity === "medium" &&
-      current.severity !== "CRITICAL" &&
-      current.severity !== "HIGH"
-    ) {
-      current.severity = "MEDIUM";
-    }
-    ruleSummaryMap.set(finding.ruleName, current);
+      cur.severity !== "CRITICAL" &&
+      cur.severity !== "HIGH"
+    )
+      cur.severity = "MEDIUM";
+    ruleSummaryMap.set(finding.ruleName, cur);
   }
   const ruleSummaryRows = [...ruleSummaryMap.entries()]
     .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 10)
+    .slice(0, 25)
+    .map(([rule, data]) => {
+      const sc =
+        data.severity === "CRITICAL"
+          ? "sev-critical"
+          : data.severity === "HIGH"
+            ? "sev-high"
+            : data.severity === "MEDIUM"
+              ? "sev-medium"
+              : "sev-low";
+      return `<tr>
+        <td>${escapeHtml(rule)}</td>
+        <td><strong>${data.count}</strong></td>
+        <td><span class="badge ${sc}">${escapeHtml(data.severity)}</span></td>
+        <td class="path-col">${escapeHtml(
+          [...data.files]
+            .slice(0, 3)
+            .map((f) => compactPath(f))
+            .join(" · "),
+        )}</td>
+      </tr>`;
+    })
+    .join("");
+
+  // ── Severity distribution ─────────────────────────────────────────────────
+  const sev = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const f of result.findings) {
+    if (f.severity in sev) sev[f.severity as keyof typeof sev]++;
+  }
+  const sevBar = `
+    <div class="sev-bar-wrap">
+      ${sev.critical > 0 ? `<div class="sev-seg seg-critical" style="flex:${sev.critical}" title="Critical: ${sev.critical}"><span>${sev.critical}</span></div>` : ""}
+      ${sev.high > 0 ? `<div class="sev-seg seg-high" style="flex:${sev.high}" title="High: ${sev.high}"><span>${sev.high}</span></div>` : ""}
+      ${sev.medium > 0 ? `<div class="sev-seg seg-medium" style="flex:${sev.medium}" title="Medium: ${sev.medium}"><span>${sev.medium}</span></div>` : ""}
+      ${sev.low > 0 ? `<div class="sev-seg seg-low" style="flex:${sev.low}" title="Low: ${sev.low}"><span>${sev.low}</span></div>` : ""}
+    </div>
+    <div class="sev-legend">
+      <span class="c-critical">● Critical: ${sev.critical}</span>
+      <span class="c-high">● High: ${sev.high}</span>
+      <span class="c-medium">● Medium: ${sev.medium}</span>
+      <span class="c-low">● Low: ${sev.low}</span>
+    </div>`;
+
+  // ── Component issue map (top chips) ──────────────────────────────────────
+  const compMap = new Map<string, { count: number; maxSev: string }>();
+  for (const f of result.findings) {
+    const name = deriveComponentName(f);
+    const cur = compMap.get(name) ?? { count: 0, maxSev: "low" };
+    cur.count++;
+    if (f.severity === "critical") cur.maxSev = "critical";
+    else if (f.severity === "high" && cur.maxSev !== "critical") cur.maxSev = "high";
+    else if (
+      f.severity === "medium" &&
+      !["critical", "high"].includes(cur.maxSev)
+    )
+      cur.maxSev = "medium";
+    compMap.set(name, cur);
+  }
+  const topComps = [...compMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 15);
+  const compChipsHtml = topComps
     .map(
-      ([rule, data]) =>
-        `<tr><td>${escapeHtml(rule)}</td><td>${data.count}</td><td>${escapeHtml(data.severity)}</td><td>${escapeHtml(
-          [...data.files].slice(0, 3).join(", "),
-        )}</td></tr>`,
+      ([name, d]) =>
+        `<button class="comp-chip sev-chip-${d.maxSev}" data-comp="${escapeHtml(name)}" title="${d.count} issues">${escapeHtml(name)} <span class="chip-count">${d.count}</span></button>`,
     )
     .join("");
 
-  const maxDebtRows = 50;
+  // ── Effort counts ─────────────────────────────────────────────────────────
+  const eff = { S: 0, M: 0, L: 0 };
+  for (const d of result.topDebts) {
+    if (d.effort in eff) eff[d.effort as keyof typeof eff]++;
+  }
+
+  // ── Debt rows ─────────────────────────────────────────────────────────────
+  const maxRows = 200;
   const debtRows = result.topDebts
-    .slice(0, maxDebtRows)
-    .map((d, index) => {
+    .slice(0, maxRows)
+    .map((d, idx) => {
       const finding = findingsById.get(d.findingId);
+      const compName = finding ? deriveComponentName(finding) : "";
       const where = finding
         ? `${compactPath(finding.filePath)}${finding.line ? `:${finding.line}` : ""}`
         : "unknown";
-      const what = finding ? `${finding.ruleName} - ${finding.message}` : d.findingId;
+      const what = finding ? `${finding.ruleName} — ${finding.message}` : d.findingId;
       const why = finding
-        ? `${finding.severity.toUpperCase()} severity in ${finding.category} with blast radius ${d.blastRadius}.`
+        ? `${finding.severity.toUpperCase()} severity in ${finding.category}. Blast radius ${d.blastRadius}.`
         : d.fixNowReason;
-      const fix = finding ? recommendedFixForFinding(finding) : "Review finding details and apply rule guidance.";
-      const findingId = d.findingId?.trim() ? d.findingId : `finding-${index + 1}`;
-      return `<tr>
-        <td>${escapeHtml(findingId)}</td>
-        <td>${d.priorityScore}</td>
-        <td>${d.effort}</td>
+      const fix = finding
+        ? recommendedFixForFinding(finding)
+        : "Review finding details and apply rule guidance.";
+      const findingId = d.findingId?.trim() ? d.findingId : `finding-${idx + 1}`;
+      const severity = finding?.severity ?? "low";
+      return `<tr data-severity="${severity}" data-component="${escapeHtml(compName)}">
+        <td>${severityBadge(severity)}</td>
+        <td><code class="finding-id">${escapeHtml(findingId)}</code></td>
+        <td><strong>${d.priorityScore}</strong></td>
+        <td><span class="badge eff-${d.effort}">${d.effort}</span></td>
+        <td class="comp-cell">${escapeHtml(compName)}</td>
         <td>${escapeHtml(what)}</td>
         <td class="path-col">${escapeHtml(where)}</td>
         <td>${escapeHtml(why)}</td>
@@ -75,281 +179,506 @@ export function renderHtml(result: AnalysisResult): string {
     })
     .join("");
 
-  const recommendations = result.recommendations
+  // ── Recommendations ───────────────────────────────────────────────────────
+  const recsHtml = result.recommendations
     .map(
       (r) => `<article class="card recommendation">
-        <h4>${escapeHtml(r.title)}</h4>
+        <div class="rec-header">
+          <h4>${escapeHtml(r.title)}</h4>
+          <span class="badge eff-${r.effort}">Effort ${r.effort}</span>
+        </div>
         <p>${escapeHtml(r.rationale)}</p>
-        <p><strong>Evidence:</strong> ${escapeHtml(r.evidenceFindingIds.join(", "))}</p>
-        <p><strong>Impacted:</strong> ${escapeHtml(r.impactedArtifacts.join(", "))}</p>
-        <p><strong>Effort:</strong> ${r.effort} | <strong>Deferred Risk:</strong> ${escapeHtml(r.deferredRisk)}</p>
+        <p><strong style="color:var(--text)">Evidence:</strong> ${escapeHtml(r.evidenceFindingIds.join(", "))}</p>
+        <p><strong style="color:var(--text)">Impacted:</strong> ${escapeHtml(r.impactedArtifacts.map((a) => compactPath(a)).join(", "))}</p>
+        <p class="risk-text"><strong style="color:var(--text)">Deferred Risk:</strong> ${escapeHtml(r.deferredRisk)}</p>
       </article>`,
     )
     .join("");
+
+  // ── Playbook rows ─────────────────────────────────────────────────────────
   const playbookRows = result.playbooks
-    .slice(0, 10)
+    .slice(0, 20)
     .map(
       (p) =>
-        `<tr><td>${escapeHtml(p.findingId)}</td><td>${escapeHtml(p.domain)}</td><td>${escapeHtml(
-          p.ruleName,
-        )}</td><td>${escapeHtml(p.whyPriority)}</td><td>${escapeHtml(
-          p.fixSteps.join(" | "),
-        )}</td><td>${escapeHtml(p.verificationSteps.join(" | "))}</td></tr>`,
+        `<tr>
+          <td><code class="finding-id">${escapeHtml(p.findingId)}</code></td>
+          <td><span class="badge domain-${escapeHtml(p.domain.toLowerCase())}">${escapeHtml(p.domain)}</span></td>
+          <td>${escapeHtml(p.ruleName)}</td>
+          <td>${escapeHtml(compactKnownPaths(p.whyPriority, knownPaths))}</td>
+          <td>${escapeHtml(p.fixSteps.join(" · "))}</td>
+          <td>${escapeHtml(p.verificationSteps.join(" · "))}</td>
+        </tr>`,
     )
     .join("");
 
-  const healthClass = result.score.overall >= 85 ? "good" : result.score.overall >= 70 ? "warn" : "bad";
+  // ── Score metadata ────────────────────────────────────────────────────────
+  const healthClass =
+    result.score.overall >= 85 ? "c-low" : result.score.overall >= 70 ? "c-medium" : "c-critical";
+  const healthLabel =
+    result.score.overall >= 85
+      ? "Healthy"
+      : result.score.overall >= 70
+        ? "Needs Attention"
+        : "At Risk";
+  const timestamp = result.timestamp
+    ? new Date(result.timestamp).toLocaleString()
+    : "—";
+
+  // ── Trend helpers ─────────────────────────────────────────────────────────
+  const scoreDeltaStr =
+    result.trend.scoreDelta != null
+      ? (result.trend.scoreDelta > 0 ? "+" : "") + result.trend.scoreDelta
+      : "n/a";
+  const findingDeltaStr =
+    result.trend.findingDelta != null
+      ? (result.trend.findingDelta > 0 ? "+" : "") + result.trend.findingDelta
+      : "n/a";
+  const scoreDeltaClass =
+    result.trend.scoreDelta != null && result.trend.scoreDelta > 0 ? "c-low" : "c-critical";
+  const findingDeltaClass =
+    result.trend.findingDelta != null && result.trend.findingDelta < 0 ? "c-low" : "c-critical";
 
   return `<!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CRE Report</title>
+  <title>CRE — Config Reverse Engineer Report</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #121a30;
-      --panel-2: #1a2542;
-      --text: #e9eefc;
-      --muted: #9fb0d9;
-      --good: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --border: #2a365f;
+      --bg:      #060d1f;
+      --surface: #0a1428;
+      --panel:   #0f1d35;
+      --panel2:  #162445;
+      --text:    #e8eeff;
+      --muted:   #7e98c4;
+      --accent:  #3b82f6;
+      --adim:    #1e3a5f;
+      --border:  #1e3054;
+      --critical: #ef4444;  --cbg: rgba(239,68,68,.12);
+      --high:    #f97316;   --hbg: rgba(249,115,22,.12);
+      --medium:  #eab308;   --mbg: rgba(234,179,8,.12);
+      --low:     #22c55e;   --lbg: rgba(34,197,94,.12);
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg, var(--bg), #0e1428 40%);
-      color: var(--text);
-      line-height: 1.45;
-    }
-    .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
-    .topbar {
-      position: sticky; top: 0; z-index: 10;
-      backdrop-filter: blur(8px);
-      background: rgba(11,16,32,0.88);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
-      display: flex; flex-wrap: wrap; gap: 10px;
-    }
-    .topbar a {
-      color: var(--muted);
-      text-decoration: none;
-      padding: 6px 10px;
-      border: 1px solid transparent;
-      border-radius: 8px;
-    }
-    .topbar a:hover { color: var(--text); border-color: var(--border); }
-    h1 { margin: 8px 0 4px; }
-    h2 { margin-top: 30px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    h4 { margin: 0 0 8px; }
-    .muted { color: var(--muted); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin: 16px 0;
-    }
-    .card {
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.22);
-    }
-    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-    .kpi .value { font-size: 30px; font-weight: 700; margin-top: 4px; }
-    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: #1b2748; }
-    .good { color: #86efac; }
-    .warn { color: #fcd34d; }
-    .bad { color: #fca5a5; }
-    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
-    input, select {
-      background: #0f1833;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #0f1833;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    th, td {
-      border-bottom: 1px solid var(--border);
-      padding: 10px;
-      vertical-align: top;
-      text-align: left;
-      font-size: 13px;
-    }
-    th { background: #17244a; position: sticky; top: 54px; z-index: 1; cursor: pointer; }
-    tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
-    tr:hover td { background: rgba(96,165,250,0.10); }
-    .recommendation p { margin: 6px 0; font-size: 13px; }
-    details {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #0f1833;
-      margin: 10px 0;
-      padding: 8px 10px;
-    }
-    summary { cursor: pointer; font-weight: 600; }
-    .small { font-size: 12px; color: var(--muted); white-space: pre-wrap; }
-    .table-wrap {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: auto;
-      background: #0f1833;
-    }
-    td.path-col {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      color: #bfdbfe;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; }
+    /* ── Nav ── */
+    .topbar { position: sticky; top: 0; z-index: 200; background: rgba(6,13,31,.93); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 2px; align-items: center; flex-wrap: wrap; }
+    .brand { font-weight: 800; font-size: 15px; color: var(--accent); margin-right: 16px; letter-spacing: -.02em; }
+    .topbar a { color: var(--muted); text-decoration: none; padding: 5px 11px; border-radius: 7px; font-size: 13px; font-weight: 500; transition: all .15s; }
+    .topbar a:hover { color: var(--text); background: var(--panel); }
+    /* ── Layout ── */
+    .container { max-width: 1480px; margin: 0 auto; padding: 28px 24px; }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -.03em; }
+    h2 { font-size: 17px; font-weight: 700; margin: 36px 0 14px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 14px; font-weight: 700; }
+    h4 { font-size: 13px; font-weight: 700; }
+    .subtitle { color: var(--muted); font-size: 13px; margin: 4px 0 22px; }
+    /* ── Cards ── */
+    .card { background: linear-gradient(145deg, var(--panel), var(--panel2)); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: 0 4px 28px rgba(0,0,0,.32); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 38px; font-weight: 800; line-height: 1; }
+    .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    /* ── Score breakdown ── */
+    .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; margin-top: 14px; }
+    .breakdown-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .b-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+    .b-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+    /* ── Severity distribution ── */
+    .sev-bar-wrap { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin: 14px 0 8px; gap: 3px; }
+    .sev-seg { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; min-width: 24px; transition: flex .4s ease; }
+    .seg-critical { background: var(--critical); }
+    .seg-high     { background: var(--high); }
+    .seg-medium   { background: var(--medium); color: #1a1000; }
+    .seg-low      { background: var(--low); color: #001a00; }
+    .sev-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; font-weight: 700; }
+    /* ── Colour helpers ── */
+    .c-critical { color: var(--critical); }
+    .c-high     { color: var(--high); }
+    .c-medium   { color: var(--medium); }
+    .c-low      { color: var(--low); }
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1.6; }
+    .sev-critical { color: var(--critical); background: var(--cbg); border: 1px solid rgba(239,68,68,.35); }
+    .sev-high     { color: var(--high);     background: var(--hbg); border: 1px solid rgba(249,115,22,.35); }
+    .sev-medium   { color: var(--medium);   background: var(--mbg); border: 1px solid rgba(234,179,8,.35); }
+    .sev-low      { color: var(--low);      background: var(--lbg); border: 1px solid rgba(34,197,94,.35); }
+    .eff-S { color: #34d399; background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3); }
+    .eff-M { color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3); }
+    .eff-L { color: #f87171; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; background: var(--adim); color: var(--accent); border: 1px solid var(--border); }
+    .domain-apex    { color: #60a5fa; background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3); }
+    .domain-lwc     { color: #c084fc; background: rgba(192,132,252,.15); border: 1px solid rgba(192,132,252,.3); }
+    .domain-flow    { color: #2dd4bf; background: rgba(45,212,191,.15); border: 1px solid rgba(45,212,191,.3); }
+    .domain-general { color: var(--muted); background: var(--panel); border: 1px solid var(--border); }
+    /* ── Component chips ── */
+    .comp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+    .comp-chip { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .15s; }
+    .comp-chip:hover { color: var(--text); border-color: var(--accent); background: var(--adim); }
+    .comp-chip.active { color: var(--text); border-color: var(--accent); background: var(--adim); box-shadow: 0 0 0 2px rgba(59,130,246,.35); }
+    .sev-chip-critical.active { border-color: var(--critical); background: var(--cbg); }
+    .sev-chip-high.active    { border-color: var(--high);     background: var(--hbg); }
+    .sev-chip-medium.active  { border-color: var(--medium);   background: var(--mbg); }
+    .chip-count { background: var(--adim); color: var(--accent); padding: 1px 6px; border-radius: 99px; font-size: 10px; margin-left: 4px; }
+    /* ── Controls ── */
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; align-items: center; }
+    .controls input, .controls select { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+    .controls input { min-width: 240px; }
+    .controls input:focus, .controls select:focus { outline: none; border-color: var(--accent); }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--panel); color: var(--muted); transition: all .15s; }
+    .btn:hover { border-color: var(--accent); color: var(--text); }
+    .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-accent:hover { background: #2563eb; }
+    /* ── Filter tags ── */
+    .filter-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; min-height: 24px; }
+    .filter-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; background: var(--adim); border: 1px solid var(--accent); border-radius: 99px; font-size: 12px; color: var(--accent); }
+    .filter-tag .xtag { cursor: pointer; font-size: 14px; line-height: 1; }
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--panel2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); cursor: pointer; position: sticky; top: 0; white-space: nowrap; user-select: none; z-index: 1; }
+    th:hover { color: var(--text); }
+    tbody tr:nth-child(even) td { background: rgba(255,255,255,.016); }
+    tbody tr:hover td { background: rgba(59,130,246,.07); }
+    tbody tr[data-severity="critical"] td:first-child { border-left: 3px solid var(--critical); }
+    tbody tr[data-severity="high"]     td:first-child { border-left: 3px solid var(--high); }
+    tbody tr[data-severity="medium"]   td:first-child { border-left: 3px solid var(--medium); }
+    tbody tr[data-severity="low"]      td:first-child { border-left: 3px solid var(--low); }
+    td.path-col { font-family: ui-monospace, Menlo, Monaco, Consolas, monospace; font-size: 11px; color: #93c5fd; white-space: nowrap; }
+    td.comp-cell { font-weight: 600; color: #a5b4fc; }
+    code.finding-id { font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: var(--panel); padding: 1px 5px; border-radius: 4px; color: var(--muted); }
+    /* ── Recommendations ── */
+    .rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .recommendation { border-left: 3px solid var(--accent); }
+    .rec-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .recommendation p { font-size: 13px; color: var(--muted); margin: 5px 0; overflow-wrap: anywhere; word-break: break-word; }
+    .risk-text { color: #fca5a5 !important; font-size: 12px !important; }
+    /* ── Playbooks ── */
+    details { border: 1px solid var(--border); border-radius: 12px; margin: 8px 0; overflow: hidden; }
+    summary { cursor: pointer; padding: 12px 18px; font-weight: 700; font-size: 13px; background: var(--panel); list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: "▶  "; font-size: 10px; }
+    details[open] summary::before { content: "▼  "; }
+    details > .table-wrap { border-radius: 0; border: none; border-top: 1px solid var(--border); }
+    /* ── Trend ── */
+    .trend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+    /* ── Row count helper ── */
+    .row-count { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .row-count strong { color: var(--text); }
   </style>
 </head>
 <body>
   <nav class="topbar">
+    <span class="brand">⚡ CRE</span>
     <a href="#overview">Overview</a>
-    <a href="#debts">Top Debts</a>
-    <a href="#recommendations">Recommendations</a>
-    <a href="#playbooks">Playbooks</a>
     <a href="#rules">Rule Summary</a>
+    <a href="#recommendations">Recommendations</a>
+    <a href="#issues">All Issues</a>
+    <a href="#playbooks">Playbooks</a>
     <a href="#trend">Trend</a>
+    <a href="#backlog">Backlog</a>
   </nav>
   <main class="container">
+
+    <!-- ═══ OVERVIEW ═══════════════════════════════════════════════════════ -->
     <section id="overview">
       <h1>Config Reverse Engineer Report</h1>
-      <p class="muted">Action-first metadata debt analysis with prioritization and remediation guidance.</p>
-      <div class="grid">
-        <article class="card kpi">
-          <div class="label">Health Score</div>
-          <div class="value ${healthClass}">${result.score.overall}</div>
+      <p class="subtitle">Metadata health analysis · ${timestamp}</p>
+
+      <div class="kpi-grid">
+        <article class="card">
+          <div class="kpi-label">Health Score</div>
+          <div class="kpi-value ${healthClass}">${result.score.overall}</div>
+          <div class="kpi-sub">${healthLabel}</div>
         </article>
-        <article class="card kpi">
-          <div class="label">Confidence</div>
-          <div class="value">${result.score.confidence}%</div>
+        <article class="card">
+          <div class="kpi-label">Total Findings</div>
+          <div class="kpi-value">${result.findings.length}</div>
+          <div class="kpi-sub">Across all scanned metadata</div>
         </article>
-        <article class="card kpi">
-          <div class="label">Scanner</div>
-          <div class="value"><span class="pill">${result.scannerStatus}</span></div>
-          <p class="small">${escapeHtml(result.scannerMessage ?? "n/a")}</p>
+        <article class="card">
+          <div class="kpi-label">Confidence</div>
+          <div class="kpi-value">${result.score.confidence}%</div>
+          <div class="kpi-sub">Analysis coverage</div>
         </article>
-        <article class="card kpi">
-          <div class="label">Dependency Impact</div>
-          <div class="value">${result.graph.nodes.length} / ${result.graph.edges.length}</div>
-          <p class="small">nodes / edges</p>
+        <article class="card">
+          <div class="kpi-label">Scanner</div>
+          <div class="kpi-value" style="font-size:15px;margin-top:8px"><span class="pill">${result.scannerStatus}</span></div>
+          <div class="kpi-sub">${escapeHtml((result.scannerMessage ?? "n/a").slice(0, 70))}</div>
         </article>
+        <article class="card">
+          <div class="kpi-label">Dependency Graph</div>
+          <div class="kpi-value">${result.graph.nodes.length}</div>
+          <div class="kpi-sub">${result.graph.edges.length} edges mapped</div>
+        </article>
+        <article class="card">
+          <div class="kpi-label">Fix Effort Mix</div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <span class="badge eff-S">S: ${eff.S}</span>
+            <span class="badge eff-M">M: ${eff.M}</span>
+            <span class="badge eff-L">L: ${eff.L}</span>
+          </div>
+          <div class="kpi-sub" style="margin-top:8px">Short · Medium · Large</div>
+        </article>
+      </div>
+
+      <article class="card" style="margin-bottom:14px">
+        <h3>Severity Distribution <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">${result.findings.length} total findings</span></h3>
+        ${sevBar}
+      </article>
+
+      <article class="card" style="margin-bottom:14px">
+        <h3>Score Breakdown by Category</h3>
+        <div class="breakdown-grid">
+          <div class="breakdown-item"><div class="b-val">${result.score.breakdown.security}</div><div class="b-label">Security</div></div>
+          <div class="breakdown-item"><div class="b-val">${result.score.breakdown.maintainability}</div><div class="b-label">Maintainability</div></div>
+          <div class="breakdown-item"><div class="b-val">${result.score.breakdown.reliability}</div><div class="b-label">Reliability</div></div>
+          <div class="breakdown-item"><div class="b-val">${result.score.breakdown.performance}</div><div class="b-label">Performance</div></div>
+          <div class="breakdown-item"><div class="b-val">${result.score.breakdown.operability}</div><div class="b-label">Operability</div></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Most Affected Components <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:6px">— click any chip to filter All Issues</span></h3>
+        <div class="comp-chips" id="compChips">${compChipsHtml}</div>
+      </article>
+    </section>
+
+    <!-- ═══ RULE SUMMARY ═══════════════════════════════════════════════════ -->
+    <section id="rules">
+      <h2>Rule Summary</h2>
+      <p class="row-count">Top <strong>${Math.min(ruleSummaryMap.size, 25)}</strong> rules by occurrence — <strong>${ruleSummaryMap.size}</strong> distinct rules across <strong>${result.findings.length}</strong> findings.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Rule</th><th>Count</th><th>Max Severity</th><th>Example Files</th>
+          </tr></thead>
+          <tbody>${ruleSummaryRows}</tbody>
+        </table>
       </div>
     </section>
 
-    <section id="debts">
-      <h2>Top Debt Items</h2>
-      <p class="small">Showing top ${Math.min(result.topDebts.length, maxDebtRows)} of ${result.topDebts.length} prioritized findings.</p>
+    <!-- ═══ RECOMMENDATIONS ════════════════════════════════════════════════ -->
+    <section id="recommendations">
+      <h2>Recommendations</h2>
+      <div class="rec-grid">${recsHtml || `<article class="card"><p>No LLM recommendations generated. Set <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> to enable AI-powered remediation guidance.</p></article>`}</div>
+    </section>
+
+    <!-- ═══ ALL ISSUES ═════════════════════════════════════════════════════ -->
+    <section id="issues">
+      <h2>All Issues</h2>
+      <p class="row-count">
+        Showing top <strong id="visibleCount">${Math.min(result.topDebts.length, maxRows)}</strong> of <strong>${result.topDebts.length}</strong> ranked findings.
+        Install Java + Salesforce Code Analyzer (<code>sf plugins install @salesforce/sfdx-scanner</code>) for complete rule coverage.
+      </p>
+      <div class="filter-tags" id="filterTags"></div>
       <div class="controls">
-        <input id="debtSearch" placeholder="Search finding, rule, file..." />
-        <select id="effortFilter">
-          <option value="">All efforts</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
+        <input id="issueSearch" placeholder="🔍 Search rule, file, component…" />
+        <select id="sevFilter">
+          <option value="">All Severities</option>
+          <option value="critical">🔴 Critical</option>
+          <option value="high">🟠 High</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
         </select>
+        <select id="effortFilter">
+          <option value="">All Efforts</option>
+          <option value="S">S — Short</option>
+          <option value="M">M — Medium</option>
+          <option value="L">L — Large</option>
+        </select>
+        <button class="btn btn-accent" id="exportCsvBtn">⬇ Export CSV</button>
+        <button class="btn" id="clearFiltersBtn">✕ Clear All</button>
       </div>
       <div class="table-wrap">
-        <table id="debtTable">
-          <thead>
-            <tr>
-              <th data-sort="0">Finding</th><th data-sort="1">Priority</th><th data-sort="2">Effort</th>
-              <th data-sort="3">What</th><th data-sort="4">Where</th><th data-sort="5">Why</th><th data-sort="6">How To Fix</th>
-            </tr>
-          </thead>
+        <table id="issueTable">
+          <thead><tr>
+            <th data-col="0">Severity</th>
+            <th data-col="1">ID</th>
+            <th data-col="2">Priority ↓</th>
+            <th data-col="3">Effort</th>
+            <th data-col="4">Component</th>
+            <th data-col="5">What</th>
+            <th data-col="6">Where</th>
+            <th data-col="7">Why</th>
+            <th data-col="8">How To Fix</th>
+          </tr></thead>
           <tbody>${debtRows}</tbody>
         </table>
       </div>
     </section>
 
-    <section id="recommendations">
-      <h2>Recommendations</h2>
-      <div class="grid">${recommendations || `<article class="card"><p>No recommendations generated.</p></article>`}</div>
-    </section>
-
-    <section id="trend">
-      <h2>Trend Delta</h2>
-      <div class="grid">
-        <article class="card"><h4>Status</h4><p>${result.trend.status}</p></article>
-        <article class="card"><h4>Previous Score / Delta</h4><p>${result.trend.previousScore ?? "n/a"} / ${result.trend.scoreDelta ?? "n/a"}</p></article>
-        <article class="card"><h4>Previous Finding Count / Delta</h4><p>${result.trend.previousFindingCount ?? "n/a"} / ${result.trend.findingDelta ?? "n/a"}</p></article>
-      </div>
-    </section>
-
+    <!-- ═══ PLAYBOOKS ══════════════════════════════════════════════════════ -->
     <section id="playbooks">
       <h2>Domain Playbooks</h2>
-      <details open>
-        <summary>View remediation playbooks</summary>
-        <table>
-          <tr><th>Finding</th><th>Domain</th><th>Rule</th><th>Why Priority</th><th>Fix Steps</th><th>Verification</th></tr>
-          ${playbookRows}
-        </table>
+      <details>
+        <summary>View remediation playbooks (${result.playbooks.length} entries)</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Finding</th><th>Domain</th><th>Rule</th><th>Why Priority</th><th>Fix Steps</th><th>Verification</th></tr></thead>
+            <tbody>${playbookRows}</tbody>
+          </table>
+        </div>
       </details>
     </section>
 
-    <section id="rules">
-      <h2>Summary By Rule</h2>
-      <table>
-        <tr><th>Rule</th><th>Count</th><th>Max Severity</th><th>Example Files</th></tr>
-        ${ruleSummaryRows}
-      </table>
+    <!-- ═══ TREND ══════════════════════════════════════════════════════════ -->
+    <section id="trend">
+      <h2>Trend Delta</h2>
+      <div class="trend-grid">
+        <article class="card">
+          <h4>Status</h4>
+          <p style="font-size:15px;font-weight:700;color:var(--text);margin-top:8px">${result.trend.status}</p>
+        </article>
+        <article class="card">
+          <h4>Score Change</h4>
+          <p style="font-size:15px;margin-top:8px">
+            ${result.trend.previousScore ?? "n/a"} → <strong>${result.score.overall}</strong>
+            <span class="${scoreDeltaClass}" style="margin-left:8px">(${scoreDeltaStr})</span>
+          </p>
+        </article>
+        <article class="card">
+          <h4>Findings Change</h4>
+          <p style="font-size:15px;margin-top:8px">
+            ${result.trend.previousFindingCount ?? "n/a"} → <strong>${result.findings.length}</strong>
+            <span class="${findingDeltaClass}" style="margin-left:8px">(${findingDeltaStr})</span>
+          </p>
+        </article>
+      </div>
     </section>
 
-    <section id="backlog">
+    <!-- ═══ BACKLOG ═════════════════════════════════════════════════════════ -->
+    <section id="backlog" style="padding-bottom:48px">
       <h2>Jira Backlog Export</h2>
-      <article class="card"><p>Backlog Items: <strong>${result.backlog.length}</strong></p></article>
+      <article class="card">
+        <p style="color:var(--text);font-size:15px;font-weight:700">${result.backlog.length} backlog items ready</p>
+        <p style="margin-top:8px">Run with <code style="background:var(--panel);padding:2px 7px;border-radius:4px">--backlog-out ./cre-backlog.csv</code> to export a Jira-importable CSV.</p>
+      </article>
     </section>
   </main>
+
   <script>
-    (function () {
-      const table = document.getElementById("debtTable");
-      if (!table) return;
-      const tbody = table.querySelector("tbody");
-      const search = document.getElementById("debtSearch");
-      const effort = document.getElementById("effortFilter");
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-      const sortState = {};
-      function applyFilters() {
-        const q = (search.value || "").toLowerCase();
-        const effortValue = effort.value;
-        rows.forEach((row) => {
-          const txt = row.textContent.toLowerCase();
-          const effortCell = row.children[2]?.textContent?.trim() || "";
-          row.style.display = (!q || txt.includes(q)) && (!effortValue || effortCell === effortValue) ? "" : "none";
-        });
-      }
-      search.addEventListener("input", applyFilters);
-      effort.addEventListener("change", applyFilters);
-      table.querySelectorAll("th[data-sort]").forEach((th) => {
-        th.addEventListener("click", () => {
-          const idx = Number(th.getAttribute("data-sort"));
-          const asc = !sortState[idx];
-          sortState[idx] = asc;
-          rows.sort((a, b) => {
-            const av = a.children[idx]?.textContent?.trim() || "";
-            const bv = b.children[idx]?.textContent?.trim() || "";
-            const an = Number(av);
-            const bn = Number(bv);
-            const cmp = !Number.isNaN(an) && !Number.isNaN(bn) ? an - bn : av.localeCompare(bv);
-            return asc ? cmp : -cmp;
-          });
-          rows.forEach((r) => tbody.appendChild(r));
-          applyFilters();
-        });
+  (function () {
+    // ── Issue table filtering ──────────────────────────────────────────────
+    const table    = document.getElementById("issueTable");
+    const tbody    = table.querySelector("tbody");
+    const rows     = Array.from(tbody.querySelectorAll("tr"));
+    const search   = document.getElementById("issueSearch");
+    const sevSel   = document.getElementById("sevFilter");
+    const effSel   = document.getElementById("effortFilter");
+    const tagsEl   = document.getElementById("filterTags");
+    const cntEl    = document.getElementById("visibleCount");
+    let   activeCmp = null;
+    const sortState = {};
+
+    function renderTags() {
+      const tags = [];
+      if (activeCmp)     tags.push(tag("Component: " + activeCmp, "cmp"));
+      if (sevSel.value)  tags.push(tag("Severity: " + sevSel.value, "sev"));
+      if (effSel.value)  tags.push(tag("Effort: " + effSel.value, "eff"));
+      if (search.value)  tags.push(tag("Search: " + search.value, "srch"));
+      tagsEl.innerHTML = tags.join("");
+      tagsEl.querySelectorAll(".xtag").forEach(x =>
+        x.addEventListener("click", () => {
+          const k = x.dataset.key;
+          if (k === "cmp")  { activeCmp = null; document.querySelectorAll(".comp-chip").forEach(c => c.classList.remove("active")); }
+          if (k === "sev")  sevSel.value = "";
+          if (k === "eff")  effSel.value = "";
+          if (k === "srch") search.value = "";
+          apply();
+        })
+      );
+    }
+    function tag(label, key) {
+      return '<span class="filter-tag">' + label + ' <span class="xtag" data-key="' + key + '">×</span></span>';
+    }
+
+    function apply() {
+      const q   = search.value.toLowerCase();
+      const sev = sevSel.value;
+      const eff = effSel.value;
+      let cnt = 0;
+      rows.forEach(r => {
+        const txt  = r.textContent.toLowerCase();
+        const rSev = r.dataset.severity || "";
+        const rCmp = r.dataset.component || "";
+        const rEff = r.children[3]?.textContent?.trim() || "";
+        const show =
+          (!q   || txt.includes(q)) &&
+          (!sev || rSev === sev) &&
+          (!eff || rEff === eff) &&
+          (!activeCmp || rCmp === activeCmp);
+        r.style.display = show ? "" : "none";
+        if (show) cnt++;
       });
-    })();
+      if (cntEl) cntEl.textContent = cnt;
+      renderTags();
+    }
+
+    search.addEventListener("input", apply);
+    sevSel.addEventListener("change", apply);
+    effSel.addEventListener("change", apply);
+
+    document.getElementById("clearFiltersBtn").addEventListener("click", () => {
+      search.value = ""; sevSel.value = ""; effSel.value = ""; activeCmp = null;
+      document.querySelectorAll(".comp-chip").forEach(c => c.classList.remove("active"));
+      apply();
+    });
+
+    // Component chip clicks
+    document.querySelectorAll(".comp-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const cmp = chip.dataset.comp;
+        if (activeCmp === cmp) {
+          activeCmp = null; chip.classList.remove("active");
+        } else {
+          activeCmp = cmp;
+          document.querySelectorAll(".comp-chip").forEach(c => c.classList.remove("active"));
+          chip.classList.add("active");
+          document.getElementById("issues").scrollIntoView({ behavior: "smooth" });
+        }
+        apply();
+      });
+    });
+
+    // Column sort
+    table.querySelectorAll("th[data-col]").forEach(th => {
+      th.addEventListener("click", () => {
+        const idx = Number(th.dataset.col);
+        const asc = !sortState[idx];
+        sortState[idx] = asc;
+        table.querySelectorAll("th").forEach(t => { const a = t.querySelector(".sarr"); if (a) a.remove(); });
+        const a = document.createElement("span"); a.className = "sarr"; a.textContent = asc ? " ▲" : " ▼"; th.appendChild(a);
+        rows.sort((a, b) => {
+          const av = a.children[idx]?.textContent?.trim() || "";
+          const bv = b.children[idx]?.textContent?.trim() || "";
+          const an = Number(av), bn = Number(bv);
+          const cmp = !isNaN(an) && !isNaN(bn) ? an - bn : av.localeCompare(bv);
+          return asc ? cmp : -cmp;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        apply();
+      });
+    });
+
+    // CSV export (filtered rows only)
+    document.getElementById("exportCsvBtn").addEventListener("click", () => {
+      const vis = rows.filter(r => r.style.display !== "none");
+      const hdrs = ["Severity","ID","Priority","Effort","Component","What","Where","Why","How To Fix"];
+      const csv = [hdrs.join(","),
+        ...vis.map(r => Array.from(r.children)
+          .map(td => '"' + (td.textContent || "").replace(/"/g, '""').trim() + '"')
+          .join(","))
+      ].join("\\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const el = document.createElement("a");
+      el.href = URL.createObjectURL(blob);
+      el.download = "cre-issues.csv";
+      el.click();
+    });
+  })();
   </script>
 </body>
 </html>`;

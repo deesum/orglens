@@ -53,6 +53,8 @@
 - Verify:
   - Build/lint/test locally after patch.
   - Run UI against large repo path and validate count, row IDs, auto-selection behavior, and compact paths.
+  - Validate embedded preview (`127.0.0.1`) and direct file render use the same generated report file path.
+  - Validate recommendations and rule summary no longer show full absolute paths.
 - Governor Limits Check:
 
 ## Decisions / Links
