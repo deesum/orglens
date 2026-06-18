@@ -10,7 +10,11 @@ export function recommendedFixForFinding(finding: AnalyzerFinding): string {
   if (rule.includes("soql") || rule.includes("dml")) {
     return "Bulkify logic: move SOQL/DML outside loops, batch records, and add a bulk test case.";
   }
-  if (rule.includes("crud") || rule.includes("fls") || category.includes("security")) {
+  if (
+    rule.includes("crud") ||
+    rule.includes("fls") ||
+    category.includes("security")
+  ) {
     return "Add explicit CRUD/FLS checks and enforce sharing/security guards before data access.";
   }
   if (category.includes("performance")) {

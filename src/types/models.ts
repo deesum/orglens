@@ -100,20 +100,66 @@ export interface BacklogItem {
   priorityScore: number;
   effort: "S" | "M" | "L";
   ownerTeam: string;
+  owner: string;
   releaseTrain: string;
   componentPath: string;
   recommendation: string;
   jiraLabels: string[];
 }
 
+export type GradeLetter = "A" | "B" | "C" | "D" | "F";
+
+export interface Grade {
+  letter: GradeLetter;
+  label: string;
+}
+
+export interface WhatIfOpportunity {
+  kind: "rule" | "component" | "severity";
+  label: string;
+  findingsResolved: number;
+  effortPoints: number;
+  projectedScore: number;
+  scoreLift: number;
+}
+
+export interface RoadmapSprint {
+  name: string;
+  findingIds: string[];
+  itemCount: number;
+  effortPoints: number;
+  severity: { critical: number; high: number; medium: number; low: number };
+  projectedScoreAfter: number;
+}
+
+export interface OwnershipBucket {
+  owner: string;
+  findingCount: number;
+  critical: number;
+  high: number;
+  effortPoints: number;
+  topRules: Array<{ rule: string; count: number }>;
+}
+
+export interface HistoryPoint {
+  timestamp: string;
+  score: number;
+  findingCount: number;
+}
+
 export interface AnalysisResult {
   score: ScoreResult;
+  grade: Grade;
   topDebts: PrioritizedDebt[];
   graph: DependencyGraph;
   findings: AnalyzerFinding[];
   recommendations: Recommendation[];
   playbooks: PlaybookGuidance[];
   trend: TrendDelta;
+  history: HistoryPoint[];
+  whatIf: WhatIfOpportunity[];
+  roadmap: RoadmapSprint[];
+  ownership: OwnershipBucket[];
   backlog: BacklogItem[];
   scannerStatus: "ok" | "failed" | "not_run";
   scannerMessage?: string;
@@ -135,4 +181,7 @@ export interface AnalyzeOptions {
   backlogOut?: string;
   componentTypes?: string[];
   components?: string[];
+  summaryOut?: string;
+  createJira?: boolean;
+  jiraExecute?: boolean;
 }

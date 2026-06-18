@@ -3,7 +3,11 @@ import path from "node:path";
 import { AgentConfig } from "../config/schema.js";
 import { AnalysisResult } from "../types/models.js";
 
-export function writeGovernanceSnapshot(result: AnalysisResult, config: AgentConfig, repoPath: string): string {
+export function writeGovernanceSnapshot(
+  result: AnalysisResult,
+  config: AgentConfig,
+  repoPath: string,
+): string {
   const snapshotDir = path.resolve(repoPath, config.governance.snapshotDir);
   fs.mkdirSync(snapshotDir, { recursive: true });
   const fileName = `snapshot-${new Date().toISOString().replaceAll(":", "-")}.json`;

@@ -1,5 +1,9 @@
 import { AgentConfig } from "../config/schema.js";
-import { AnalyzerFinding, ScoreResult, ScoringBreakdown } from "../types/models.js";
+import {
+  AnalyzerFinding,
+  ScoreResult,
+  ScoringBreakdown,
+} from "../types/models.js";
 
 const categoryMap: Record<string, keyof ScoringBreakdown> = {
   security: "security",
@@ -11,7 +15,10 @@ const categoryMap: Record<string, keyof ScoringBreakdown> = {
   operability: "operability",
 };
 
-function severityPoints(config: AgentConfig, severity: AnalyzerFinding["severity"]): number {
+function severityPoints(
+  config: AgentConfig,
+  severity: AnalyzerFinding["severity"],
+): number {
   return config.scoring.severityPoints[severity];
 }
 
@@ -29,7 +36,8 @@ export function computeScore(
   };
 
   for (const finding of findings) {
-    const mapped = categoryMap[finding.category.toLowerCase()] ?? "maintainability";
+    const mapped =
+      categoryMap[finding.category.toLowerCase()] ?? "maintainability";
     penalties[mapped] += severityPoints(config, finding.severity);
   }
 

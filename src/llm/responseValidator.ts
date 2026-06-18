@@ -13,10 +13,14 @@ export function validateRecommendations(
     .map((r) => r as Record<string, unknown>)
     .map((r) => {
       const evidenceFindingIds = Array.isArray(r.evidenceFindingIds)
-        ? (r.evidenceFindingIds as string[]).filter((id) => validFindingIds.has(id))
+        ? (r.evidenceFindingIds as string[]).filter((id) =>
+            validFindingIds.has(id),
+          )
         : [];
       const effort: "S" | "M" | "L" =
-        r.effort === "S" || r.effort === "M" || r.effort === "L" ? r.effort : "M";
+        r.effort === "S" || r.effort === "M" || r.effort === "L"
+          ? r.effort
+          : "M";
 
       return {
         title: `${r.title ?? "Recommendation"}`,

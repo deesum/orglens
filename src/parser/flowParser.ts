@@ -8,7 +8,9 @@ const objectRefRegex = /<object>([^<]+)<\/object>/g;
 const subflowRegex = /<flowName>([^<]+)<\/flowName>/g;
 
 export function parseFlows(repoPath: string): MetadataNode[] {
-  const files = walkFiles(repoPath, [".xml"]).filter((f) => f.endsWith(".flow-meta.xml"));
+  const files = walkFiles(repoPath, [".xml"]).filter((f) =>
+    f.endsWith(".flow-meta.xml"),
+  );
   return files.map((filePath) => {
     const content = fs.readFileSync(filePath, "utf8");
     const refs = new Set<string>();

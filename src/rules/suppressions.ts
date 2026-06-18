@@ -15,7 +15,8 @@ export function applySuppressions(
     for (const rule of config.suppression.rules) {
       const ruleMatch = !rule.ruleName || finding.ruleName === rule.ruleName;
       const fileMatch =
-        !rule.filePathPattern || new RegExp(rule.filePathPattern).test(finding.filePath);
+        !rule.filePathPattern ||
+        new RegExp(rule.filePathPattern).test(finding.filePath);
       if (ruleMatch && fileMatch) {
         audit.push({
           findingId: finding.id,

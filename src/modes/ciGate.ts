@@ -7,7 +7,11 @@ export interface CiGateResult {
   exitCode: number;
 }
 
-export function evaluateCiGate(score: ScoreResult, config: AgentConfig, thresholdOverride?: number): CiGateResult {
+export function evaluateCiGate(
+  score: ScoreResult,
+  config: AgentConfig,
+  thresholdOverride?: number,
+): CiGateResult {
   const failBelow = thresholdOverride ?? config.scoring.ciGate.failBelow;
   const warnBelow = config.scoring.ciGate.warnBelow;
 

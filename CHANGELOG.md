@@ -6,16 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Changed
+
 - Rebranded the project to **OrgLens**; CLI command is now `orglens`.
 - Default report/backlog filenames are now `orglens-report.*` / `orglens-backlog.csv`.
+- Repository moved to `github.com/deesum/orglens`.
+- Backlog keys are now `ORGLENS-*` and the CSV gained an `Owner` column.
 
 ### Added
+
+- **Letter grade (A–F)** scorecard alongside the numeric Health Score.
+- **What-If Simulator** — projected score lift per rule / component / severity group.
+- **Remediation Roadmap** — effort-weighted sprint plan with cumulative projected scores.
+- **Ownership** mapping via configurable path-glob rules (`ownership.rules`).
+- **Score history sparkline** built from governance snapshots.
+- **Save as PDF** button + print-optimized stylesheet in the HTML report.
+- `orglens diff` — compare two reports (introduced vs resolved findings).
+- `orglens ask` — natural-language Q&A over a report via OpenAI/Anthropic.
+- `analyze --summary-out` — compact Markdown summary for PR comments.
+- `analyze --create-jira` / `--jira-execute` — create Jira issues via REST (dry run by default).
+- GitHub Action `orglens-health.yml` with a PR comment bot.
+- `roadmap` and `ownership` config blocks (+ example config).
 - `CONTRIBUTING.md` and this `CHANGELOG.md`.
 - `package.json` metadata: keywords, author, `files`, `engines`, `prepublishOnly`.
 
 ## [0.1.0] — Initial
 
 ### Added
+
 - Salesforce Code Analyzer (PMD + ESLint) integration with a Java-free
   lightweight fallback scanner.
 - Metadata discovery for Apex, LWC, Flow, Aura, Custom Objects/Fields,

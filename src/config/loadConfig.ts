@@ -5,7 +5,9 @@ import { AgentConfig, configSchema, defaultConfig } from "./schema.js";
 
 function deepMerge<T>(base: T, override: Partial<T>): T {
   const output = { ...base } as Record<string, unknown>;
-  for (const [key, value] of Object.entries(override as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(
+    override as Record<string, unknown>,
+  )) {
     if (
       value &&
       typeof value === "object" &&
@@ -14,7 +16,10 @@ function deepMerge<T>(base: T, override: Partial<T>): T {
       typeof output[key] === "object" &&
       !Array.isArray(output[key])
     ) {
-      output[key] = deepMerge(output[key] as Record<string, unknown>, value as Record<string, unknown>);
+      output[key] = deepMerge(
+        output[key] as Record<string, unknown>,
+        value as Record<string, unknown>,
+      );
     } else if (value !== undefined) {
       output[key] = value;
     }

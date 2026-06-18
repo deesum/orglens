@@ -36,15 +36,21 @@ function deriveComponentName(finding: AnalyzerFinding): string {
   if (finding.componentName) return finding.componentName;
   const parts = finding.filePath.replaceAll("\\", "/").split("/");
   const file = parts[parts.length - 1] ?? "";
-  return file.replace(/\.(cls|trigger|js|html|css|flow-meta\.xml|object-meta\.xml|field-meta\.xml)$/, "");
+  return file.replace(
+    /\.(cls|trigger|js|html|css|flow-meta\.xml|object-meta\.xml|field-meta\.xml)$/,
+    "",
+  );
 }
 
 function severityBadge(sev: string): string {
   const cls =
-    sev === "critical" ? "sev-critical"
-    : sev === "high" ? "sev-high"
-    : sev === "medium" ? "sev-medium"
-    : "sev-low";
+    sev === "critical"
+      ? "sev-critical"
+      : sev === "high"
+        ? "sev-high"
+        : sev === "medium"
+          ? "sev-medium"
+          : "sev-low";
   return `<span class="badge ${cls}">${escapeHtml(sev.toUpperCase())}</span>`;
 }
 
@@ -57,7 +63,12 @@ export function renderHtml(result: AnalysisResult): string {
   // ── Rule summary ──────────────────────────────────────────────────────────
   const ruleSummaryMap = new Map<
     string,
-    { count: number; severity: string; files: Set<string>; sample: AnalyzerFinding }
+    {
+      count: number;
+      severity: string;
+      files: Set<string>;
+      sample: AnalyzerFinding;
+    }
   >();
   for (const finding of result.findings) {
     const cur = ruleSummaryMap.get(finding.ruleName) ?? {
@@ -69,7 +80,8 @@ export function renderHtml(result: AnalysisResult): string {
     cur.count += 1;
     cur.files.add(finding.filePath);
     if (finding.severity === "critical") cur.severity = "CRITICAL";
-    else if (finding.severity === "high" && cur.severity !== "CRITICAL") cur.severity = "HIGH";
+    else if (finding.severity === "high" && cur.severity !== "CRITICAL")
+      cur.severity = "HIGH";
     else if (
       finding.severity === "medium" &&
       cur.severity !== "CRITICAL" &&
@@ -138,7 +150,8 @@ export function renderHtml(result: AnalysisResult): string {
     const cur = compMap.get(name) ?? { count: 0, maxSev: "low" };
     cur.count++;
     if (f.severity === "critical") cur.maxSev = "critical";
-    else if (f.severity === "high" && cur.maxSev !== "critical") cur.maxSev = "high";
+    else if (f.severity === "high" && cur.maxSev !== "critical")
+      cur.maxSev = "high";
     else if (
       f.severity === "medium" &&
       !["critical", "high"].includes(cur.maxSev)
@@ -179,14 +192,18 @@ export function renderHtml(result: AnalysisResult): string {
       const ruleHtml = docUrl
         ? `<a class="rule-link" href="${escapeHtml(docUrl)}" target="_blank" rel="noopener">${escapeHtml(ruleLabel)} <span class="ext">↗</span></a>`
         : escapeHtml(ruleLabel);
-      const what = finding ? `${ruleHtml} — ${escapeHtml(finding.message)}` : escapeHtml(d.findingId);
+      const what = finding
+        ? `${ruleHtml} — ${escapeHtml(finding.message)}`
+        : escapeHtml(d.findingId);
       const why = finding
         ? `${finding.severity.toUpperCase()} severity in ${finding.category}. Blast radius ${d.blastRadius}.`
         : d.fixNowReason;
       const fix = finding
         ? recommendedFixForFinding(finding)
         : "Review finding details and apply rule guidance.";
-      const findingId = d.findingId?.trim() ? d.findingId : `finding-${idx + 1}`;
+      const findingId = d.findingId?.trim()
+        ? d.findingId
+        : `finding-${idx + 1}`;
       const severity = finding?.severity ?? "low";
       if (
         finding &&
@@ -238,7 +255,10 @@ export function renderHtml(result: AnalysisResult): string {
   }
   const typeOptions = [...typeCounts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([t, c]) => `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${c})</option>`)
+    .map(
+      ([t, c]) =>
+        `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${c})</option>`,
+    )
     .join("");
 
   // ── Recommendations ───────────────────────────────────────────────────────
@@ -275,7 +295,11 @@ export function renderHtml(result: AnalysisResult): string {
 
   // ── Score metadata ────────────────────────────────────────────────────────
   const healthClass =
-    result.score.overall >= 85 ? "c-low" : result.score.overall >= 70 ? "c-medium" : "c-critical";
+    result.score.overall >= 85
+      ? "c-low"
+      : result.score.overall >= 70
+        ? "c-medium"
+        : "c-critical";
   const healthLabel =
     result.score.overall >= 85
       ? "Healthy"
@@ -296,9 +320,101 @@ export function renderHtml(result: AnalysisResult): string {
       ? (result.trend.findingDelta > 0 ? "+" : "") + result.trend.findingDelta
       : "n/a";
   const scoreDeltaClass =
-    result.trend.scoreDelta != null && result.trend.scoreDelta > 0 ? "c-low" : "c-critical";
+    result.trend.scoreDelta != null && result.trend.scoreDelta > 0
+      ? "c-low"
+      : "c-critical";
   const findingDeltaClass =
-    result.trend.findingDelta != null && result.trend.findingDelta < 0 ? "c-low" : "c-critical";
+    result.trend.findingDelta != null && result.trend.findingDelta < 0
+      ? "c-low"
+      : "c-critical";
+
+  // ── Grade ─────────────────────────────────────────────────────────────────
+  const grade = result.grade ?? { letter: "?", label: "" };
+  const gradeClass =
+    grade.letter === "A" || grade.letter === "B"
+      ? "c-low"
+      : grade.letter === "C"
+        ? "c-medium"
+        : "c-critical";
+
+  // ── What-if simulator rows ────────────────────────────────────────────────
+  const whatIfRows = (result.whatIf ?? [])
+    .map(
+      (o) => `<tr>
+        <td><span class="pill">${escapeHtml(o.kind)}</span></td>
+        <td><strong>${escapeHtml(o.label)}</strong></td>
+        <td>${o.findingsResolved}</td>
+        <td>${o.effortPoints} pts</td>
+        <td><strong class="c-low">+${o.scoreLift}</strong></td>
+        <td><strong>${o.projectedScore}</strong></td>
+      </tr>`,
+    )
+    .join("");
+
+  // ── Roadmap cards ─────────────────────────────────────────────────────────
+  const roadmapCards = (result.roadmap ?? [])
+    .map(
+      (s) => `<article class="card roadmap-card">
+        <div class="rec-header"><h4>${escapeHtml(s.name)}</h4><span class="pill">${s.effortPoints} pts</span></div>
+        <p style="font-size:13px;color:var(--muted)">${s.itemCount} items · score after → <strong class="c-low">${s.projectedScoreAfter}</strong></p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          ${s.severity.critical ? `<span class="badge sev-critical">${s.severity.critical} crit</span>` : ""}
+          ${s.severity.high ? `<span class="badge sev-high">${s.severity.high} high</span>` : ""}
+          ${s.severity.medium ? `<span class="badge sev-medium">${s.severity.medium} med</span>` : ""}
+          ${s.severity.low ? `<span class="badge sev-low">${s.severity.low} low</span>` : ""}
+        </div>
+      </article>`,
+    )
+    .join("");
+
+  // ── Ownership rows ────────────────────────────────────────────────────────
+  const ownershipRows = (result.ownership ?? [])
+    .map(
+      (o) => `<tr>
+        <td><strong>${escapeHtml(o.owner)}</strong></td>
+        <td><strong>${o.findingCount}</strong></td>
+        <td>${o.critical ? `<span class="badge sev-critical">${o.critical}</span>` : "—"}</td>
+        <td>${o.high ? `<span class="badge sev-high">${o.high}</span>` : "—"}</td>
+        <td>${o.effortPoints} pts</td>
+        <td>${escapeHtml(o.topRules.map((r) => `${r.rule} (${r.count})`).join(", "))}</td>
+      </tr>`,
+    )
+    .join("");
+
+  // ── Trend sparkline ───────────────────────────────────────────────────────
+  const hist = result.history ?? [];
+  let sparkline = `<p style="color:var(--muted);font-size:13px">Run in <code>--mode governance</code> over time to build a score history. Currently ${hist.length} data point${hist.length === 1 ? "" : "s"}.</p>`;
+  if (hist.length >= 2) {
+    const w = 720;
+    const h = 96;
+    const pad = 10;
+    const scores = hist.map((p) => p.score);
+    const min = Math.min(...scores, 0);
+    const max = Math.max(...scores, 100);
+    const range = max - min || 1;
+    const stepX = (w - pad * 2) / (hist.length - 1);
+    const pts = hist.map((p, i) => {
+      const x = pad + i * stepX;
+      const y = pad + (h - pad * 2) * (1 - (p.score - min) / range);
+      return [x, y] as const;
+    });
+    const poly = pts
+      .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
+      .join(" ");
+    const dots = pts
+      .map(
+        ([x, y], i) =>
+          `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#3b82f6"><title>${escapeHtml(
+            new Date(hist[i].timestamp).toLocaleString(),
+          )} — score ${hist[i].score}, ${hist[i].findingCount} findings</title></circle>`,
+      )
+      .join("");
+    sparkline = `<div class="spark-wrap"><svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+      <polyline fill="none" stroke="#3b82f6" stroke-width="2.5" points="${poly}" />
+      ${dots}
+    </svg>
+    <p style="color:var(--muted);font-size:12px;margin-top:4px">Score over ${hist.length} runs · latest <strong style="color:var(--text)">${hist[hist.length - 1].score}</strong></p></div>`;
+  }
 
   return `<!doctype html>
 <html lang="en">
@@ -441,6 +557,23 @@ export function renderHtml(result: AnalysisResult): string {
     .qw-card h4 { font-size: 12px; }
     .qw-card p { font-size: 12px; color: var(--muted); margin: 5px 0; overflow-wrap: anywhere; }
     .banner { display: flex; align-items: center; gap: 10px; background: var(--lbg); border: 1px solid rgba(34,197,94,.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; font-size: 13px; color: var(--low); }
+    /* ── Grade badge ── */
+    .grade-badge { font-size: 44px; font-weight: 900; line-height: 1; letter-spacing: -.04em; }
+    /* ── Roadmap ── */
+    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+    .roadmap-card { border-top: 3px solid var(--accent); }
+    /* ── Sparkline ── */
+    .spark-wrap { margin-top: 12px; }
+    /* ── Print / PDF ── */
+    .print-btn { margin-left: auto; }
+    @media print {
+      :root { --bg:#fff; --surface:#fff; --panel:#f6f8fc; --panel2:#eef2ff; --text:#0f172a; --muted:#475569; --border:#cbd5e1; --adim:#e0e7ff; }
+      .topbar, .controls, .filter-tags { display: none !important; }
+      .card { box-shadow: none; }
+      section { break-inside: avoid; }
+      a { color: #1d4ed8 !important; }
+      details { open: true; }
+    }
   </style>
 </head>
 <body>
@@ -450,10 +583,13 @@ export function renderHtml(result: AnalysisResult): string {
     <a href="#rules">Rule Summary</a>
     <a href="#recommendations">Recommendations</a>
     <a href="#quickwins">Quick Wins</a>
+    <a href="#whatif">What-If</a>
+    <a href="#roadmap">Roadmap</a>
     <a href="#issues">All Issues</a>
-    <a href="#playbooks">Playbooks</a>
+    <a href="#ownership">Ownership</a>
     <a href="#trend">Trend</a>
     <a href="#backlog">Backlog</a>
+    <button class="btn print-btn" onclick="window.print()">🖨 Save as PDF</button>
   </nav>
   <main class="container">
 
@@ -463,6 +599,11 @@ export function renderHtml(result: AnalysisResult): string {
       <p class="subtitle">AI-powered Salesforce metadata health analysis · ${timestamp}</p>
 
       <div class="kpi-grid">
+        <article class="card">
+          <div class="kpi-label">Grade</div>
+          <div class="grade-badge ${gradeClass}">${escapeHtml(grade.letter)}</div>
+          <div class="kpi-sub">${escapeHtml(grade.label)}</div>
+        </article>
         <article class="card">
           <div class="kpi-label">Health Score</div>
           <div class="kpi-value ${healthClass}">${result.score.overall}</div>
@@ -552,6 +693,31 @@ export function renderHtml(result: AnalysisResult): string {
       }
     </section>
 
+    <!-- ═══ WHAT-IF SIMULATOR ══════════════════════════════════════════════ -->
+    <section id="whatif">
+      <h2>What-If Simulator <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">Projected score lift if you fix a group</span></h2>
+      ${
+        whatIfRows
+          ? `<p class="row-count">Ranked by score lift — "if we resolve every finding in this group, the health score becomes X."</p>
+             <div class="table-wrap"><table>
+               <thead><tr><th>Scope</th><th>Target</th><th>Findings</th><th>Effort</th><th>Score Lift</th><th>Projected Score</th></tr></thead>
+               <tbody>${whatIfRows}</tbody>
+             </table></div>`
+          : `<article class="card"><p style="color:var(--muted)">No score-lift opportunities detected (no findings, or none move the score).</p></article>`
+      }
+    </section>
+
+    <!-- ═══ ROADMAP ════════════════════════════════════════════════════════ -->
+    <section id="roadmap">
+      <h2>Remediation Roadmap <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">Effort-weighted sprint plan</span></h2>
+      ${
+        roadmapCards
+          ? `<p class="row-count">Highest-priority debt packed into capacity-bound sprints, with the projected score after each.</p>
+             <div class="roadmap-grid">${roadmapCards}</div>`
+          : `<article class="card"><p style="color:var(--muted)">No prioritized debt to schedule.</p></article>`
+      }
+    </section>
+
     <!-- ═══ ALL ISSUES ═════════════════════════════════════════════════════ -->
     <section id="issues">
       <h2>All Issues</h2>
@@ -614,9 +780,27 @@ export function renderHtml(result: AnalysisResult): string {
       </details>
     </section>
 
+    <!-- ═══ OWNERSHIP ══════════════════════════════════════════════════════ -->
+    <section id="ownership">
+      <h2>Ownership <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">Findings grouped by owning team</span></h2>
+      ${
+        ownershipRows
+          ? `<p class="row-count">Configure owners in <code>agent.config.yml</code> (<code>ownership.rules</code>) to route debt to the right squads.</p>
+             <div class="table-wrap"><table>
+               <thead><tr><th>Owner</th><th>Findings</th><th>Critical</th><th>High</th><th>Effort</th><th>Top Rules</th></tr></thead>
+               <tbody>${ownershipRows}</tbody>
+             </table></div>`
+          : `<article class="card"><p style="color:var(--muted)">No ownership data.</p></article>`
+      }
+    </section>
+
     <!-- ═══ TREND ══════════════════════════════════════════════════════════ -->
     <section id="trend">
-      <h2>Trend Delta</h2>
+      <h2>Trend</h2>
+      <article class="card" style="margin-bottom:14px">
+        <h3>Health Score History</h3>
+        ${sparkline}
+      </article>
       <div class="trend-grid">
         <article class="card">
           <h4>Status</h4>
@@ -772,7 +956,7 @@ export function renderHtml(result: AnalysisResult): string {
       const blob = new Blob([csv], { type: "text/csv" });
       const el = document.createElement("a");
       el.href = URL.createObjectURL(blob);
-      el.download = "cre-issues.csv";
+      el.download = "orglens-issues.csv";
       el.click();
     });
   })();

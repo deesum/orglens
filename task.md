@@ -1,6 +1,7 @@
 # [W-003] Config Reverse Engineer Agent Setup Status:Develop Date: 2026-06-17
 
 ## Analysis
+
 - Reqs:
   - Implement CLI tool that computes score + priority ranking.
   - Generate evidence-linked human-readable recommendations.
@@ -16,6 +17,7 @@
   - N/A (tooling-only task; no new Salesforce object introduced in MVP scaffold).
 
 ## Plan
+
 - Phases/Tasks (Est, Files):
   - CLI/config bootstrap complete:
     - `src/cli.ts`, `src/config/*`, `agent.config.example.yml`, `package.json`, `tsconfig.json`
@@ -31,6 +33,7 @@
 - Data Model: Findings + dependency nodes/edges + score/ranking DTOs in `src/types/models.ts`
 
 ## Debug (if applicable)
+
 - Symptoms:
   - HTML debt table first row intermittently appeared blank in "Finding" column.
   - Full absolute file paths made the debt table hard to scan in large org repos.
@@ -58,6 +61,7 @@
 - Governor Limits Check:
 
 ## Decisions / Links
+
 - ADRs / Notes:
   - Use targeted deployments only.
   - Use deterministic scoring and evidence-bound recommendations.
@@ -69,4 +73,5 @@
   - Comprehensive PMD Apex rule->category map added as fallback for the lightweight scanner.
   - Rewrote README.md as a complete first-time-user guide (audience, value, prerequisites + install steps, tool install, CLI/UI usage, features, modes, troubleshooting, command reference).
   - Rebranded to OrgLens (CLI `orglens`); added package.json metadata, CONTRIBUTING.md, CHANGELOG.md; license held as UNLICENSED pending policy confirmation.
+  - Added architect/team feature set: letter grade (A–F), What-If simulator (score lift by rule/component/severity), effort-weighted remediation roadmap (sprint planner with projected scores), ownership mapping via path-glob config, score-history sparkline, Save-as-PDF/print CSS, `orglens diff`, `orglens ask`, `--summary-out` for PR comments, Jira REST creation (`--create-jira`/`--jira-execute`, dry-run default), and a GitHub Action PR comment bot. Repo remote moved to github.com/deesum/orglens.
 - Reference Docs: `docs/config-reverse-engineer-agent/architecture.md`

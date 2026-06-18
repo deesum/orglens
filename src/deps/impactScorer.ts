@@ -1,6 +1,8 @@
 import { DependencyGraph } from "../types/models.js";
 
-export function computeBlastRadius(graph: DependencyGraph): Map<string, number> {
+export function computeBlastRadius(
+  graph: DependencyGraph,
+): Map<string, number> {
   const incomingCount = new Map<string, number>();
   for (const node of graph.nodes) {
     incomingCount.set(node.id, 0);

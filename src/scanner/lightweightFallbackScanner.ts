@@ -28,7 +28,9 @@ function finding(
   };
 }
 
-export function runLightweightFallbackScanner(repoPath: string): AnalyzerFinding[] {
+export function runLightweightFallbackScanner(
+  repoPath: string,
+): AnalyzerFinding[] {
   const findings: AnalyzerFinding[] = [];
   let idCounter = 1;
 
@@ -88,7 +90,9 @@ export function runLightweightFallbackScanner(repoPath: string): AnalyzerFinding
             "security",
             filePath,
             i + 1,
-            filePath.includes(`${path.sep}lwc${path.sep}`) ? "LightningComponentBundle" : "Unknown",
+            filePath.includes(`${path.sep}lwc${path.sep}`)
+              ? "LightningComponentBundle"
+              : "Unknown",
           ),
         );
       }
@@ -102,7 +106,9 @@ export function runLightweightFallbackScanner(repoPath: string): AnalyzerFinding
             "security",
             filePath,
             i + 1,
-            filePath.includes(`${path.sep}lwc${path.sep}`) ? "LightningComponentBundle" : "Unknown",
+            filePath.includes(`${path.sep}lwc${path.sep}`)
+              ? "LightningComponentBundle"
+              : "Unknown",
           ),
         );
       }

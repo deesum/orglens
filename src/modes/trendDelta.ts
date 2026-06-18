@@ -25,7 +25,9 @@ export function computeTrendDelta(
   }
 
   try {
-    const previous = JSON.parse(fs.readFileSync(snapshot, "utf8")) as AnalysisResult;
+    const previous = JSON.parse(
+      fs.readFileSync(snapshot, "utf8"),
+    ) as AnalysisResult;
     const scoreDelta = current.score.overall - previous.score.overall;
     const findingDelta = current.findings.length - previous.findings.length;
     let status: TrendDelta["status"] = "unchanged";

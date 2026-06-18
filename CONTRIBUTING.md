@@ -6,8 +6,8 @@ metadata health and tech-debt analyzer.
 ## Getting set up
 
 ```bash
-git clone https://github.com/deesum/config-reverse-engineer-agent.git
-cd config-reverse-engineer-agent
+git clone https://github.com/deesum/orglens.git
+cd orglens
 npm install
 npm run build
 npm link        # makes the `orglens` command available locally
@@ -18,12 +18,12 @@ Salesforce CLI + Code Analyzer plugin).
 
 ## Development workflow
 
-| Task | Command |
-| --- | --- |
-| Build | `npm run build` |
-| Lint | `npm run lint` |
-| Unit tests | `npm test` |
-| Format | `npm run format` |
+| Task            | Command                                |
+| --------------- | -------------------------------------- |
+| Build           | `npm run build`                        |
+| Lint            | `npm run lint`                         |
+| Unit tests      | `npm test`                             |
+| Format          | `npm run format`                       |
 | Run from source | `npm run dev -- analyze --repo <path>` |
 
 Before opening a pull request, please ensure:

@@ -45,6 +45,23 @@ export const configSchema = z.object({
   governance: z.object({
     snapshotDir: z.string().min(1),
   }),
+  ownership: z.object({
+    defaultOwner: z.string().min(1),
+    rules: z.array(
+      z.object({
+        pattern: z.string().min(1),
+        owner: z.string().min(1),
+      }),
+    ),
+  }),
+  roadmap: z.object({
+    sprintCapacityPoints: z.number().min(1),
+    effortPoints: z.object({
+      S: z.number().min(0),
+      M: z.number().min(0),
+      L: z.number().min(0),
+    }),
+  }),
 });
 
 export type AgentConfig = z.infer<typeof configSchema>;
@@ -87,5 +104,13 @@ export const defaultConfig: AgentConfig = {
   },
   governance: {
     snapshotDir: ".cre-snapshots",
+  },
+  ownership: {
+    defaultOwner: "Unassigned",
+    rules: [],
+  },
+  roadmap: {
+    sprintCapacityPoints: 10,
+    effortPoints: { S: 1, M: 3, L: 8 },
   },
 };

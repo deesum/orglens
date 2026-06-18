@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { AgentConfig } from "../config/schema.js";
+import { assignOwner } from "../analysis/ownership.js";
 import { AnalysisResult, BacklogItem } from "../types/models.js";
 
 function csvEscape(value: string): string {
@@ -10,34 +12,49 @@ export function buildBacklogItems(
   result: Pick<AnalysisResult, "topDebts" | "findings" | "recommendations">,
   ownerTeam: string,
   releaseTrain: string,
+  config: AgentConfig,
 ): BacklogItem[] {
   const findingMap = new Map(result.findings.map((f) => [f.id, f]));
   const recommendationMap = new Map(
-    result.recommendations.flatMap((r) => r.evidenceFindingIds.map((id) => [id, r.rationale] as const)),
+    result.recommendations.flatMap((r) =>
+      r.evidenceFindingIds.map((id) => [id, r.rationale] as const),
+    ),
   );
 
   return result.topDebts.map((debt, idx) => {
     const finding = findingMap.get(debt.findingId);
     const severity = finding?.severity ?? "medium";
     const componentPath = finding?.filePath ?? "unknown";
-    const recommendation = recommendationMap.get(debt.findingId) ?? debt.fixNowReason;
+    const recommendation =
+      recommendationMap.get(debt.findingId) ?? debt.fixNowReason;
+    const owner = finding
+      ? assignOwner(finding, config)
+      : config.ownership.defaultOwner;
     return {
-      key: `CRE-${idx + 1}`,
+      key: `ORGLENS-${idx + 1}`,
       title: `${finding?.ruleName ?? debt.findingId} in ${path.basename(componentPath)}`,
       description: finding?.message ?? debt.fixNowReason,
       severity,
       priorityScore: debt.priorityScore,
       effort: debt.effort,
       ownerTeam,
+      owner,
       releaseTrain,
       componentPath,
       recommendation,
-      jiraLabels: ["config-reverse-engineer", `severity-${severity}`, `effort-${debt.effort.toLowerCase()}`],
+      jiraLabels: [
+        "orglens",
+        `severity-${severity}`,
+        `effort-${debt.effort.toLowerCase()}`,
+      ],
     };
   });
 }
 
-export function writeBacklogCsv(backlog: BacklogItem[], outputPath: string): string {
+export function writeBacklogCsv(
+  backlog: BacklogItem[],
+  outputPath: string,
+): string {
   const header = [
     "IssueKey",
     "Summary",
@@ -46,6 +63,7 @@ export function writeBacklogCsv(backlog: BacklogItem[], outputPath: string): str
     "PriorityScore",
     "Effort",
     "OwnerTeam",
+    "Owner",
     "ReleaseTrain",
     "ComponentPath",
     "Recommendation",
@@ -59,6 +77,7 @@ export function writeBacklogCsv(backlog: BacklogItem[], outputPath: string): str
     `${item.priorityScore}`,
     item.effort,
     item.ownerTeam,
+    item.owner,
     item.releaseTrain,
     item.componentPath,
     item.recommendation,

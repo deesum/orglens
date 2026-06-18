@@ -20,8 +20,12 @@ interface UiOptions {
 
 function htmlPage(defaults: UiOptions): string {
   const safeRepo = defaults.repo.replaceAll("\\", "\\\\").replaceAll("`", "");
-  const safePkg = (defaults.packagePath ?? "").replaceAll("\\", "\\\\").replaceAll("`", "");
-  const safeOrg = (defaults.targetOrg ?? "").replaceAll("\\", "\\\\").replaceAll("`", "");
+  const safePkg = (defaults.packagePath ?? "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("`", "");
+  const safeOrg = (defaults.targetOrg ?? "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("`", "");
   return `<!doctype html>
 <html>
 <head>
@@ -310,12 +314,19 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function sendJson(res: http.ServerResponse, status: number, payload: unknown): void {
+function sendJson(
+  res: http.ServerResponse,
+  status: number,
+  payload: unknown,
+): void {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(payload));
 }
 
-function collectComponents(repo: string, packagePath?: string): Array<{ name: string; type: MetadataType }> {
+function collectComponents(
+  repo: string,
+  packagePath?: string,
+): Array<{ name: string; type: MetadataType }> {
   const roots = detectMetadataRoots(repo);
   const discovered = roots.flatMap((root) => {
     const core = [...parseApex(root), ...parseLwc(root), ...parseFlows(root)];
@@ -332,7 +343,9 @@ function collectComponents(repo: string, packagePath?: string): Array<{ name: st
     seen.add(key);
     components.push({ name: node.name, type: node.type });
   }
-  return components.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+  return components.sort(
+    (a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name),
+  );
 }
 
 export function startUiServer(opts: UiOptions): void {
@@ -347,10 +360,16 @@ export function startUiServer(opts: UiOptions): void {
 
     if (req.method === "POST" && reqUrl.pathname === "/api/components") {
       try {
-        const body = JSON.parse(await readBody(req)) as { repo?: string; packagePath?: string };
+        const body = JSON.parse(await readBody(req)) as {
+          repo?: string;
+          packagePath?: string;
+        };
         const repo = body.repo ?? opts.repo;
         const packagePath = body.packagePath ?? opts.packagePath;
-        const components = collectComponents(path.resolve(repo), packagePath ? path.resolve(packagePath) : undefined);
+        const components = collectComponents(
+          path.resolve(repo),
+          packagePath ? path.resolve(packagePath) : undefined,
+        );
         sendJson(res, 200, { components });
       } catch (error) {
         sendJson(res, 500, { error: `${error}` });
@@ -363,29 +382,44 @@ export function startUiServer(opts: UiOptions): void {
         const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
         const repo = path.resolve(`${body.repo ?? opts.repo}`);
         const format = `${body.format ?? "html"}`;
-        const reportPath = path.resolve(process.cwd(), `orglens-report.${format === "md" ? "md" : format}`);
+        const reportPath = path.resolve(
+          process.cwd(),
+          `orglens-report.${format === "md" ? "md" : format}`,
+        );
         await analyzeCommand({
           repo,
-          packagePath: body.packagePath ? path.resolve(`${body.packagePath}`) : opts.packagePath,
+          packagePath: body.packagePath
+            ? path.resolve(`${body.packagePath}`)
+            : opts.packagePath,
           targetOrg: `${body.targetOrg ?? opts.targetOrg ?? ""}` || undefined,
           format: format as "json" | "md" | "html",
           mode: `${body.mode ?? "local"}` as "local" | "ci" | "governance",
           out: reportPath,
           threshold: body.threshold ? Number(body.threshold) : undefined,
-          provider: body.provider ? `${body.provider}` as "openai" | "anthropic" : undefined,
+          provider: body.provider
+            ? (`${body.provider}` as "openai" | "anthropic")
+            : undefined,
           team: `${body.team ?? "Architecture"}`,
           releaseTrain: `${body.releaseTrain ?? "R1"}`,
-          backlogOut: body.backlogOut ? path.resolve(`${body.backlogOut}`) : undefined,
+          backlogOut: body.backlogOut
+            ? path.resolve(`${body.backlogOut}`)
+            : undefined,
           componentTypes: Array.isArray(body.componentTypes)
             ? (body.componentTypes.filter(Boolean) as MetadataType[])
             : undefined,
-          components: Array.isArray(body.components) ? body.components.map((c) => `${c}`) : undefined,
+          components: Array.isArray(body.components)
+            ? body.components.map((c) => `${c}`)
+            : undefined,
         });
         let result: unknown = null;
         if (format !== "html" && fs.existsSync(reportPath)) {
           result = JSON.parse(fs.readFileSync(reportPath, "utf8"));
         }
-        sendJson(res, 200, { message: "Analysis complete", reportPath, result });
+        sendJson(res, 200, {
+          message: "Analysis complete",
+          reportPath,
+          result,
+        });
       } catch (error) {
         sendJson(res, 500, { error: `${error}` });
       }

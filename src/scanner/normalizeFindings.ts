@@ -34,12 +34,21 @@ function inferMetadataType(filePath: string): MetadataType {
   return "Unknown";
 }
 
-function inferComponentName(filePath: string, metadataType: MetadataType): string | undefined {
+function inferComponentName(
+  filePath: string,
+  metadataType: MetadataType,
+): string | undefined {
   if (metadataType === "ApexClass") {
-    return filePath.split("/").pop()?.replace(/\.cls$/, "");
+    return filePath
+      .split("/")
+      .pop()
+      ?.replace(/\.cls$/, "");
   }
   if (metadataType === "Flow") {
-    return filePath.split("/").pop()?.replace(/\.flow-meta\.xml$/, "");
+    return filePath
+      .split("/")
+      .pop()
+      ?.replace(/\.flow-meta\.xml$/, "");
   }
   if (metadataType === "LightningComponentBundle") {
     const parts = filePath.split("/");
@@ -51,7 +60,9 @@ function inferComponentName(filePath: string, metadataType: MetadataType): strin
   return undefined;
 }
 
-export function normalizeFindings(rawFindings: RawFinding[]): AnalyzerFinding[] {
+export function normalizeFindings(
+  rawFindings: RawFinding[],
+): AnalyzerFinding[] {
   return rawFindings.map((f, index) => {
     const filePath = f.fileName ?? "unknown";
     const metadataType = inferMetadataType(filePath);

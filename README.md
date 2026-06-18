@@ -29,13 +29,13 @@
 
 ## 1. Who is this for?
 
-| Persona | How they use CRE |
-| --- | --- |
-| **Technical Architect** | Rapid health assessment of an unfamiliar or inherited org, identify hotspots, justify refactoring with evidence, set governance baselines. |
-| **System Integrator (SI) / Delivery Lead** | Generate a prioritized remediation backlog, export to Jira, assign by team/release train, track trend across sprints. |
-| **Salesforce Developers** | See exactly which rule failed, where, why it matters, how to fix it, with a one-click link to the official rule documentation. |
-| **Delivery / Engineering Managers** | Track a single Health Score over time, gate pull requests on quality thresholds, report progress to stakeholders. |
-| **QA / Release Engineers** | Wire CRE into CI to fail or warn when code quality regresses. |
+| Persona                                    | How they use CRE                                                                                                                           |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Technical Architect**                    | Rapid health assessment of an unfamiliar or inherited org, identify hotspots, justify refactoring with evidence, set governance baselines. |
+| **System Integrator (SI) / Delivery Lead** | Generate a prioritized remediation backlog, export to Jira, assign by team/release train, track trend across sprints.                      |
+| **Salesforce Developers**                  | See exactly which rule failed, where, why it matters, how to fix it, with a one-click link to the official rule documentation.             |
+| **Delivery / Engineering Managers**        | Track a single Health Score over time, gate pull requests on quality thresholds, report progress to stakeholders.                          |
+| **QA / Release Engineers**                 | Wire CRE into CI to fail or warn when code quality regresses.                                                                              |
 
 ## 2. What value does it provide?
 
@@ -43,8 +43,8 @@
   metadata to understand debt. CRE produces a structured assessment in seconds.
 - **Prioritization, not just a wall of findings.** Every issue is ranked by
   severity × blast radius × effort so teams fix the things that matter first.
-- **Actionable, evidence-linked guidance.** Each finding shows *what, where,
-  why, and how to fix* — plus a deep link to the exact rule documentation.
+- **Actionable, evidence-linked guidance.** Each finding shows _what, where,
+  why, and how to fix_ — plus a deep link to the exact rule documentation.
 - **Quick Wins.** Automatically surfaces high-severity / low-effort items for
   the best return on investment.
 - **Governance over time.** Snapshots + trend deltas show whether quality is
@@ -55,6 +55,7 @@
 ## 3. Feature overview
 
 **Analysis engine**
+
 - Salesforce Code Analyzer (PMD + ESLint) integration
 - Built-in **lightweight fallback scanner** (works even without Java — see note)
 - Apex, LWC, Flow, Aura, Custom Objects/Fields, Permission Sets, Flexipages,
@@ -64,7 +65,19 @@
   maintainability, reliability, performance, operability)
 - Confidence metric for analysis coverage
 
+**Architect intelligence**
+
+- **Letter grade (A–F)** alongside the numeric Health Score
+- **What-If Simulator** — projected score lift if you fix a given rule,
+  component, or severity group ("fix X → score becomes Y")
+- **Remediation Roadmap** — prioritized debt packed into effort-weighted
+  sprints with the projected score after each sprint
+- **Ownership** view — findings grouped by owning team via configurable
+  path-glob rules (`ownership.rules`)
+- **Score history sparkline** built from governance snapshots
+
 **Interactive HTML report**
+
 - Colour-coded KPI dashboard and **severity distribution** bar
 - **Rule Summary** with deep links to each rule's official documentation
 - AI/heuristic **Recommendations** cards
@@ -76,12 +89,16 @@
   dismissable filter tags
 - **Sortable** columns + **CSV export** of the filtered view
 - **Domain Playbooks** (Apex / LWC / Flow remediation steps)
-- **Trend Delta** vs previous snapshot
-- **Jira Backlog** summary
+- **Save as PDF** button (print-optimized, ink-friendly stylesheet)
 
 **Delivery integrations**
+
 - JSON / Markdown / HTML output
-- Jira-ready CSV backlog export (`--backlog-out`)
+- Jira-ready CSV backlog export (`--backlog-out`, includes owner column)
+- **Create Jira issues** directly via REST API (`--create-jira`, dry run by default)
+- **PR comment bot** via Markdown summary (`--summary-out`) + GitHub Action
+- **Diff mode** — compare two reports to see introduced vs resolved findings
+- **Ask mode** — natural-language Q&A over a report using your LLM key
 - CI gate with configurable threshold
 - Governance snapshots for trend tracking
 - Local Browser UI for point-and-click scans
@@ -95,31 +112,38 @@
 
 ## 4. Prerequisites (and how to install each)
 
-| # | Prerequisite | Required? | Purpose |
-| - | --- | --- | --- |
-| 1 | **Node.js 20+** | ✅ Required | Runs the CRE CLI/UI |
-| 2 | **Git** | ✅ Required | Clone the repo |
-| 3 | **Java (JDK 17)** | ⭐ Strongly recommended | Enables full PMD/ESLint scanning |
-| 4 | **Salesforce CLI (`sf`)** | ⭐ Recommended | Provides the Code Analyzer plugin |
-| 5 | **Code Analyzer plugin** | ⭐ Recommended | The full rule engine |
-| 6 | **OpenAI / Anthropic key** | ◻ Optional | AI-written recommendations |
+| #   | Prerequisite               | Required?               | Purpose                           |
+| --- | -------------------------- | ----------------------- | --------------------------------- |
+| 1   | **Node.js 20+**            | ✅ Required             | Runs the CRE CLI/UI               |
+| 2   | **Git**                    | ✅ Required             | Clone the repo                    |
+| 3   | **Java (JDK 17)**          | ⭐ Strongly recommended | Enables full PMD/ESLint scanning  |
+| 4   | **Salesforce CLI (`sf`)**  | ⭐ Recommended          | Provides the Code Analyzer plugin |
+| 5   | **Code Analyzer plugin**   | ⭐ Recommended          | The full rule engine              |
+| 6   | **OpenAI / Anthropic key** | ◻ Optional              | AI-written recommendations        |
 
 ### 4.1 Node.js 20+
 
 **macOS (Homebrew):**
+
 ```bash
 brew install node
 ```
+
 **Windows:** download the LTS installer from [nodejs.org](https://nodejs.org/), or:
+
 ```powershell
 winget install OpenJS.NodeJS.LTS
 ```
+
 **Linux / cross-platform (nvm):**
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 nvm install 20 && nvm use 20
 ```
+
 Verify:
+
 ```bash
 node -v   # expect v20.x or higher
 ```
@@ -129,6 +153,7 @@ node -v   # expect v20.x or higher
 **macOS:** `brew install git` (or `xcode-select --install`)
 **Windows:** `winget install Git.Git`
 **Linux:** `sudo apt install git` / `sudo dnf install git`
+
 ```bash
 git --version
 ```
@@ -136,6 +161,7 @@ git --version
 ### 4.3 Java (JDK 17) — for full scanning
 
 **macOS (Homebrew):**
+
 ```bash
 brew install openjdk@17
 sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk \
@@ -143,9 +169,11 @@ sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk \
 echo 'export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
+
 **Windows:** `winget install EclipseAdoptium.Temurin.17.JDK`
 **Linux:** `sudo apt install openjdk-17-jdk`
 Verify:
+
 ```bash
 java -version   # expect "17.x"
 ```
@@ -167,6 +195,7 @@ sf plugins        # confirm sfdx-scanner is listed
 ### 4.6 (Optional) AI provider key
 
 Set whichever you have:
+
 ```bash
 export OPENAI_API_KEY="sk-..."
 # or
@@ -179,8 +208,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 ```bash
 # 1. Clone
-git clone https://github.com/deesum/config-reverse-engineer-agent.git
-cd config-reverse-engineer-agent
+git clone https://github.com/deesum/orglens.git
+cd orglens
 
 # 2. Install dependencies
 npm install
@@ -193,6 +222,7 @@ npm link
 ```
 
 Verify the install:
+
 ```bash
 orglens --version
 orglens --help
@@ -249,11 +279,13 @@ Open **http://127.0.0.1:4173** and you can:
 ## 8. Using the CLI
 
 **Basic:**
+
 ```bash
 orglens analyze --repo . --format html
 ```
 
 **Scope to specific component types/names:**
+
 ```bash
 orglens analyze --repo . --format html \
   --component-types ApexClass,Flow \
@@ -261,6 +293,7 @@ orglens analyze --repo . --format html \
 ```
 
 **Jira-ready backlog with ownership tags:**
+
 ```bash
 orglens analyze --repo . --format html \
   --team "FSL-Architecture" --release-train "R2" \
@@ -268,6 +301,7 @@ orglens analyze --repo . --format html \
 ```
 
 **JSON for downstream tooling:**
+
 ```bash
 orglens analyze --repo . --format json --out ./orglens-report.json
 ```
@@ -300,17 +334,20 @@ The HTML report is organized top-to-bottom for an architect's workflow:
 ## 10. Run modes (local / CI / governance)
 
 **Local (default)** — one-off architecture assessment:
+
 ```bash
 orglens analyze --repo . --format html --mode local
 ```
 
 **CI gate** — fail/warn when score drops below a threshold (great for PRs):
+
 ```bash
 orglens analyze --repo . --format json --mode ci --threshold 70
 # exit code is non-zero when the gate fails
 ```
 
 **Governance** — persist snapshots so trend deltas accumulate over time:
+
 ```bash
 orglens analyze --repo . --format md --mode governance
 ```
@@ -334,14 +371,14 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 
 ## 12. Troubleshooting
 
-| Symptom | Cause | Fix |
-| --- | --- | --- |
-| `Scanner Status: failed` / "Unable to locate a Java Runtime" | Java not installed/on PATH | Install JDK 17 ([§4.3](#43-java-jdk-17--for-full-scanning)); CRE still runs the fallback scanner meanwhile |
-| Few findings on a large org | Only the fallback scanner ran | Install Java + `sfdx-scanner` for full PMD/ESLint coverage |
-| `orglens: command not found` | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal |
-| UI shows an old version | Stale server process | Stop the old `orglens ui` process, restart it, hard refresh the browser |
-| No components found | Wrong project path | Pass the project root; CRE auto-detects `force-app/main/default` underneath |
-| Recommendations empty | No API key | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional) |
+| Symptom                                                      | Cause                                   | Fix                                                                                                        |
+| ------------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `Scanner Status: failed` / "Unable to locate a Java Runtime" | Java not installed/on PATH              | Install JDK 17 ([§4.3](#43-java-jdk-17--for-full-scanning)); CRE still runs the fallback scanner meanwhile |
+| Few findings on a large org                                  | Only the fallback scanner ran           | Install Java + `sfdx-scanner` for full PMD/ESLint coverage                                                 |
+| `orglens: command not found`                                 | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal                                                    |
+| UI shows an old version                                      | Stale server process                    | Stop the old `orglens ui` process, restart it, hard refresh the browser                                    |
+| No components found                                          | Wrong project path                      | Pass the project root; CRE auto-detects `force-app/main/default` underneath                                |
+| Recommendations empty                                        | No API key                              | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional)                                                     |
 
 ---
 
@@ -349,31 +386,82 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 
 ### `orglens analyze`
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `--repo <path>` | *(required)* | Project root (metadata roots auto-detected) |
-| `--package <path>` | — | `package.xml` to narrow scan scope |
-| `--target-org <alias>` | — | Salesforce org alias (reserved for retrieve flows) |
-| `--format <json\|md\|html>` | `html` | Output format |
-| `--out <path>` | `orglens-report.<fmt>` | Report output path |
-| `--mode <local\|ci\|governance>` | `local` | Run mode |
-| `--config <path>` | — | Agent config YAML |
-| `--provider <openai\|anthropic>` | — | LLM provider for recommendations |
-| `--threshold <number>` | — | CI fail threshold (mode=ci) |
-| `--team <name>` | `Architecture` | Owner team for backlog export |
-| `--release-train <name>` | `R1` | Release train for backlog export |
-| `--backlog-out <path>` | `orglens-backlog.csv` | Jira-ready CSV output path |
-| `--component-types <list>` | — | Comma-separated types to include |
-| `--components <list>` | — | Comma-separated component names to include |
+| Option                           | Default                | Description                                                           |
+| -------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| `--repo <path>`                  | _(required)_           | Project root (metadata roots auto-detected)                           |
+| `--package <path>`               | —                      | `package.xml` to narrow scan scope                                    |
+| `--target-org <alias>`           | —                      | Salesforce org alias (reserved for retrieve flows)                    |
+| `--format <json\|md\|html>`      | `html`                 | Output format                                                         |
+| `--out <path>`                   | `orglens-report.<fmt>` | Report output path                                                    |
+| `--mode <local\|ci\|governance>` | `local`                | Run mode                                                              |
+| `--config <path>`                | —                      | Agent config YAML                                                     |
+| `--provider <openai\|anthropic>` | —                      | LLM provider for recommendations                                      |
+| `--threshold <number>`           | —                      | CI fail threshold (mode=ci)                                           |
+| `--team <name>`                  | `Architecture`         | Owner team for backlog export                                         |
+| `--release-train <name>`         | `R1`                   | Release train for backlog export                                      |
+| `--backlog-out <path>`           | `orglens-backlog.csv`  | Jira-ready CSV output path                                            |
+| `--component-types <list>`       | —                      | Comma-separated types to include                                      |
+| `--components <list>`            | —                      | Comma-separated component names to include                            |
+| `--summary-out <path>`           | —                      | Write a compact Markdown summary (for PR comments)                    |
+| `--create-jira`                  | off                    | Create Jira issues from the backlog (dry run unless `--jira-execute`) |
+| `--jira-execute`                 | off                    | Actually create Jira issues (requires `JIRA_*` env vars)              |
+
+### `orglens diff`
+
+Compare two JSON reports to see what changed between runs.
+
+| Option              | Default      | Description                       |
+| ------------------- | ------------ | --------------------------------- |
+| `--baseline <path>` | _(required)_ | Baseline report JSON              |
+| `--current <path>`  | _(required)_ | Current report JSON               |
+| `--out <path>`      | —            | Write the Markdown diff to a file |
+
+```bash
+orglens diff --baseline before.json --current after.json --out diff.md
+```
+
+### `orglens ask`
+
+Ask a natural-language question about a generated JSON report (requires an LLM key).
+
+| Option                           | Default               | Description                         |
+| -------------------------------- | --------------------- | ----------------------------------- |
+| `<question>`                     | _(required)_          | Your question (positional argument) |
+| `--report <path>`                | `orglens-report.json` | Path to the JSON report             |
+| `--config <path>`                | —                     | Agent config YAML                   |
+| `--provider <openai\|anthropic>` | —                     | LLM provider                        |
+
+```bash
+orglens ask "Which components carry the most critical debt and why?"
+```
+
+### Jira issue creation
+
+Set these env vars, then run `orglens analyze --create-jira --jira-execute`:
+
+```bash
+export JIRA_BASE_URL="https://your-domain.atlassian.net"
+export JIRA_EMAIL="you@example.com"
+export JIRA_API_TOKEN="<api-token>"
+export JIRA_PROJECT_KEY="ORG"
+export JIRA_ISSUE_TYPE="Task"   # optional, defaults to Task
+```
+
+Without `--jira-execute` the command performs a safe dry run and prints what it would create.
+
+### Ownership & roadmap config
+
+Add an `ownership` and `roadmap` block to `agent.config.yml` (see
+`agent.config.example.yml`) to route findings to teams and tune sprint capacity.
 
 ### `orglens ui`
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `--repo <path>` | current dir | Project root |
-| `--package <path>` | — | `package.xml` to narrow scope |
-| `--target-org <alias>` | — | Salesforce org alias |
-| `--port <number>` | `4173` | UI server port |
+| Option                 | Default     | Description                   |
+| ---------------------- | ----------- | ----------------------------- |
+| `--repo <path>`        | current dir | Project root                  |
+| `--package <path>`     | —           | `package.xml` to narrow scope |
+| `--target-org <alias>` | —           | Salesforce org alias          |
+| `--port <number>`      | `4173`      | UI server port                |
 
 ---
 

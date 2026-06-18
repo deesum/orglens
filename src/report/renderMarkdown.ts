@@ -3,7 +3,10 @@ import { recommendedFixForFinding } from "./fixGuidance.js";
 
 export function renderMarkdown(result: AnalysisResult): string {
   const findingsById = new Map(result.findings.map((f) => [f.id, f]));
-  const ruleSummaryMap = new Map<string, { count: number; severity: string; files: Set<string> }>();
+  const ruleSummaryMap = new Map<
+    string,
+    { count: number; severity: string; files: Set<string> }
+  >();
   for (const finding of result.findings) {
     const current = ruleSummaryMap.get(finding.ruleName) ?? {
       count: 0,
@@ -13,7 +16,8 @@ export function renderMarkdown(result: AnalysisResult): string {
     current.count += 1;
     current.files.add(finding.filePath);
     if (finding.severity === "critical") current.severity = "CRITICAL";
-    else if (finding.severity === "high" && current.severity !== "CRITICAL") current.severity = "HIGH";
+    else if (finding.severity === "high" && current.severity !== "CRITICAL")
+      current.severity = "HIGH";
     else if (
       finding.severity === "medium" &&
       current.severity !== "CRITICAL" &&
@@ -28,7 +32,9 @@ export function renderMarkdown(result: AnalysisResult): string {
     .slice(0, 10)
     .map(
       ([rule, data], idx) =>
-        `${idx + 1}. **${rule}** count=${data.count}, max-severity=${data.severity}, files=${[...data.files]
+        `${idx + 1}. **${rule}** count=${data.count}, max-severity=${data.severity}, files=${[
+          ...data.files,
+        ]
           .slice(0, 3)
           .join(", ")}`,
     )
@@ -37,12 +43,18 @@ export function renderMarkdown(result: AnalysisResult): string {
     .slice(0, 10)
     .map((debt, idx) => {
       const finding = findingsById.get(debt.findingId);
-      const where = finding ? `${finding.filePath}${finding.line ? `:${finding.line}` : ""}` : "unknown";
-      const what = finding ? `${finding.ruleName} - ${finding.message}` : debt.findingId;
+      const where = finding
+        ? `${finding.filePath}${finding.line ? `:${finding.line}` : ""}`
+        : "unknown";
+      const what = finding
+        ? `${finding.ruleName} - ${finding.message}`
+        : debt.findingId;
       const why = finding
         ? `${finding.severity.toUpperCase()} severity in ${finding.category} with blast radius ${debt.blastRadius}.`
         : debt.fixNowReason;
-      const fix = finding ? recommendedFixForFinding(finding) : "Review rule guidance.";
+      const fix = finding
+        ? recommendedFixForFinding(finding)
+        : "Review rule guidance.";
       return `${idx + 1}. **${debt.findingId}** (score=${debt.priorityScore}, effort=${debt.effort})
    - what: ${what}
    - where: ${where}
@@ -73,10 +85,32 @@ export function renderMarkdown(result: AnalysisResult): string {
     )
     .join("\n");
 
+  const whatIf = result.whatIf
+    .map(
+      (o) =>
+        `- [${o.kind}] **${o.label}** → +${o.scoreLift} (to ${o.projectedScore}); resolves ${o.findingsResolved} finding(s), ${o.effortPoints} pts`,
+    )
+    .join("\n");
+  const roadmap = result.roadmap
+    .map(
+      (s) =>
+        `- **${s.name}**: ${s.itemCount} items, ${s.effortPoints} pts → projected score ${s.projectedScoreAfter} (C:${s.severity.critical} H:${s.severity.high} M:${s.severity.medium} L:${s.severity.low})`,
+    )
+    .join("\n");
+  const ownership = result.ownership
+    .map(
+      (o) =>
+        `- **${o.owner}**: ${o.findingCount} findings (${o.critical} critical, ${o.high} high), ${o.effortPoints} pts — ${o.topRules
+          .map((r) => `${r.rule} (${r.count})`)
+          .join(", ")}`,
+    )
+    .join("\n");
+
   return [
-    "# Config Reverse Engineer Report",
+    "# OrgLens — Metadata Health Report",
     "",
     `- Timestamp: ${result.timestamp}`,
+    `- Grade: **${result.grade.letter}** (${result.grade.label})`,
     `- Scanner Status: **${result.scannerStatus}**`,
     `- Scanner Message: **${result.scannerMessage ?? "n/a"}**`,
     `- Overall Health Score: **${result.score.overall}**`,
@@ -87,6 +121,15 @@ export function renderMarkdown(result: AnalysisResult): string {
     "",
     "## Recommendations",
     recommendations || "_No recommendations generated._",
+    "",
+    "## What-If Simulator",
+    whatIf || "_No score-lift opportunities detected._",
+    "",
+    "## Remediation Roadmap",
+    roadmap || "_No prioritized debt to schedule._",
+    "",
+    "## Ownership",
+    ownership || "_No ownership data._",
     "",
     "## Trend Delta",
     `- Status: ${result.trend.status}`,

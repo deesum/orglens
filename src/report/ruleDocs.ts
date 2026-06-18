@@ -101,7 +101,8 @@ function isEslintRule(ruleName: string): boolean {
   // ESLint rules are lowercase, dash-separated (e.g. no-undef, no-unused-vars)
   // and may be namespaced (e.g. @lwc/lwc/no-async-operation).
   return (
-    /^[a-z@][a-z0-9@/-]*-[a-z0-9/-]+$/.test(ruleName) && ruleName === ruleName.toLowerCase()
+    /^[a-z@][a-z0-9@/-]*-[a-z0-9/-]+$/.test(ruleName) &&
+    ruleName === ruleName.toLowerCase()
   );
 }
 

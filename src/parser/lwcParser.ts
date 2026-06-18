@@ -19,7 +19,10 @@ export function parseLwc(repoPath: string): MetadataNode[] {
     }
     const bundleName = parts[lwcIndex + 1];
     const bundlePath = parts.slice(0, lwcIndex + 2).join(path.sep);
-    const current = bundles.get(bundleName) ?? { path: bundlePath, references: new Set<string>() };
+    const current = bundles.get(bundleName) ?? {
+      path: bundlePath,
+      references: new Set<string>(),
+    };
     const content = fs.readFileSync(filePath, "utf8");
     for (const match of content.matchAll(apexImportRegex)) {
       current.references.add(match[1]);

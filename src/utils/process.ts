@@ -7,7 +7,11 @@ export interface ProcessResult {
   exitCode: number | null;
 }
 
-export function runCommand(command: string, args: string[], cwd: string): ProcessResult {
+export function runCommand(
+  command: string,
+  args: string[],
+  cwd: string,
+): ProcessResult {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",

@@ -28,3 +28,23 @@ llm:
   redactionEnabled: true
 governance:
   snapshotDir: .cre-snapshots
+ownership:
+  # Owner assigned when no rule matches a finding's file path.
+  defaultOwner: Unassigned
+  # First matching glob wins. Patterns are matched against the file path
+  # (use ** for any path segments, * for a single segment).
+  rules:
+    - pattern: "**/lwc/**"
+      owner: Frontend Guild
+    - pattern: "**/classes/**"
+      owner: Platform Core
+    - pattern: "**/flows/**"
+      owner: Automation Team
+roadmap:
+  # Effort capacity (in points) packed into each suggested sprint.
+  sprintCapacityPoints: 10
+  # Story points assigned to each effort size.
+  effortPoints:
+    S: 1
+    M: 3
+    L: 8

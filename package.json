@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deesum/config-reverse-engineer-agent.git"
+    "url": "git+https://github.com/deesum/orglens.git"
   },
   "keywords": [
     "salesforce",
@@ -46,9 +46,9 @@
   "license": "UNLICENSED",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/deesum/config-reverse-engineer-agent/issues"
+    "url": "https://github.com/deesum/orglens/issues"
   },
-  "homepage": "https://github.com/deesum/config-reverse-engineer-agent#readme",
+  "homepage": "https://github.com/deesum/orglens#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
     "commander": "^15.0.0",

@@ -65,7 +65,16 @@ export function runCodeAnalyzer(repoPath: string): ScannerRunResult {
 
   const command = runCommand(
     "sf",
-    ["scanner", "run", "--target", repoPath, "--format", "json", "--outfile", outFile],
+    [
+      "scanner",
+      "run",
+      "--target",
+      repoPath,
+      "--format",
+      "json",
+      "--outfile",
+      outFile,
+    ],
     repoPath,
   );
 
@@ -90,7 +99,10 @@ export function runCodeAnalyzer(repoPath: string): ScannerRunResult {
     return {
       findings: [],
       status: "failed",
-      message: command.stderr || command.stdout || "Salesforce scanner command failed.",
+      message:
+        command.stderr ||
+        command.stdout ||
+        "Salesforce scanner command failed.",
     };
   }
 

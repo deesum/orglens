@@ -5,22 +5,38 @@ import { walkFiles } from "../utils/fileWalker.js";
 function fileToMetadataType(filePath: string): MetadataType {
   if (filePath.endsWith(".cls")) return "ApexClass";
   if (filePath.endsWith(".trigger")) return "ApexTrigger";
-  if (filePath.includes(`${path.sep}lwc${path.sep}`)) return "LightningComponentBundle";
-  if (filePath.includes(`${path.sep}aura${path.sep}`)) return "AuraDefinitionBundle";
+  if (filePath.includes(`${path.sep}lwc${path.sep}`))
+    return "LightningComponentBundle";
+  if (filePath.includes(`${path.sep}aura${path.sep}`))
+    return "AuraDefinitionBundle";
   if (filePath.endsWith(".flow-meta.xml")) return "Flow";
-  if (filePath.includes(`${path.sep}objects${path.sep}`) && filePath.endsWith(".object-meta.xml")) return "CustomObject";
-  if (filePath.includes(`${path.sep}objects${path.sep}`) && filePath.endsWith(".field-meta.xml")) return "CustomField";
-  if (filePath.includes(`${path.sep}permissionsets${path.sep}`)) return "PermissionSet";
+  if (
+    filePath.includes(`${path.sep}objects${path.sep}`) &&
+    filePath.endsWith(".object-meta.xml")
+  )
+    return "CustomObject";
+  if (
+    filePath.includes(`${path.sep}objects${path.sep}`) &&
+    filePath.endsWith(".field-meta.xml")
+  )
+    return "CustomField";
+  if (filePath.includes(`${path.sep}permissionsets${path.sep}`))
+    return "PermissionSet";
   if (filePath.includes(`${path.sep}flexipages${path.sep}`)) return "FlexiPage";
   if (filePath.includes(`${path.sep}labels${path.sep}`)) return "CustomLabel";
-  if (filePath.includes(`${path.sep}staticresources${path.sep}`)) return "StaticResource";
-  if (filePath.includes(`${path.sep}pages${path.sep}`)) return "VisualforcePage";
+  if (filePath.includes(`${path.sep}staticresources${path.sep}`))
+    return "StaticResource";
+  if (filePath.includes(`${path.sep}pages${path.sep}`))
+    return "VisualforcePage";
   return "Unknown";
 }
 
 function componentName(filePath: string, metadataType: MetadataType): string {
   const base = path.basename(filePath);
-  if (metadataType === "LightningComponentBundle" || metadataType === "AuraDefinitionBundle") {
+  if (
+    metadataType === "LightningComponentBundle" ||
+    metadataType === "AuraDefinitionBundle"
+  ) {
     const parts = filePath.split(path.sep);
     const folder = metadataType === "LightningComponentBundle" ? "lwc" : "aura";
     const idx = parts.lastIndexOf(folder);
@@ -40,7 +56,15 @@ function componentName(filePath: string, metadataType: MetadataType): string {
 }
 
 export function parseMetadataCatalog(rootPath: string): MetadataNode[] {
-  const files = walkFiles(rootPath, [".cls", ".trigger", ".js", ".html", ".xml", ".page", ".cmp"]);
+  const files = walkFiles(rootPath, [
+    ".cls",
+    ".trigger",
+    ".js",
+    ".html",
+    ".xml",
+    ".page",
+    ".cmp",
+  ]);
   const nodes: MetadataNode[] = [];
   const seen = new Set<string>();
   for (const filePath of files) {

@@ -1,5 +1,9 @@
 import fs from "node:fs";
-import { AnalyzerFinding, MetadataNode, MetadataType } from "../types/models.js";
+import {
+  AnalyzerFinding,
+  MetadataNode,
+  MetadataType,
+} from "../types/models.js";
 
 interface PackageScope {
   entries: Map<string, Set<string>>;
@@ -36,24 +40,39 @@ function parsePackageXml(packagePath: string): PackageScope | null {
     const nameMatch = block.match(/<name>([^<]+)<\/name>/);
     if (!nameMatch) continue;
     const typeName = nameMatch[1].trim();
-    const members = [...block.matchAll(/<members>([^<]+)<\/members>/g)].map((m) => m[1].trim());
+    const members = [...block.matchAll(/<members>([^<]+)<\/members>/g)].map(
+      (m) => m[1].trim(),
+    );
     entries.set(typeName, new Set(members));
   }
   return { entries };
 }
 
-function inScope(typeName: string, componentName: string, scope: PackageScope): boolean {
+function inScope(
+  typeName: string,
+  componentName: string,
+  scope: PackageScope,
+): boolean {
   const members = scope.entries.get(typeName);
   if (!members) return false;
   return members.has("*") || members.has(componentName);
 }
 
-export function filterNodesByPackage(nodes: MetadataNode[], packagePath?: string): MetadataNode[] {
+export function filterNodesByPackage(
+  nodes: MetadataNode[],
+  packagePath?: string,
+): MetadataNode[] {
   if (!packagePath) return nodes;
   const scope = parsePackageXml(packagePath);
   if (!scope) return nodes;
 
-  return nodes.filter((node) => inScope(metadataTypeToManifestType[node.type] ?? "Unknown", node.name, scope));
+  return nodes.filter((node) =>
+    inScope(
+      metadataTypeToManifestType[node.type] ?? "Unknown",
+      node.name,
+      scope,
+    ),
+  );
 }
 
 export function filterFindingsByPackage(
@@ -68,7 +87,8 @@ export function filterFindingsByPackage(
   const nodePathSet = new Set(nodes.map((n) => n.path));
   return findings.filter((finding) => {
     if (finding.componentName) {
-      const manifestType = metadataTypeToManifestType[finding.metadataType] ?? "Unknown";
+      const manifestType =
+        metadataTypeToManifestType[finding.metadataType] ?? "Unknown";
       if (inScope(manifestType, finding.componentName, scope)) {
         return true;
       }
