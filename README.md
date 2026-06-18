@@ -470,9 +470,7 @@ Add an `ownership` and `roadmap` block to `agent.config.yml` (see
 
 ## License
 
-License is currently **TBD** (`UNLICENSED`) pending confirmation of the
-applicable open-source policy. Until a license is added, no usage rights are
-granted by default — contact the author before reuse.
+Released under the [MIT License](./LICENSE) © 2026 Deepak Sumra.
 
 ## Project documentation
 

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **MIT License** — project is now open source.
 - **Letter grade (A–F)** scorecard alongside the numeric Health Score.
 - **What-If Simulator** — projected score lift per rule / component / severity group.
 - **Remediation Roadmap** — effort-weighted sprint plan with cumulative projected scores.

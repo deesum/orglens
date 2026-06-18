@@ -43,7 +43,7 @@
     "cli"
   ],
   "author": "Deepak Sumra",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "bugs": {
     "url": "https://github.com/deesum/orglens/issues"
