@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Blank report preview in the UI** — the iframe now clears `srcdoc` before
+  setting `src` (browsers give `srcdoc` precedence) and appends a cache-buster so
+  re-runs always reload. Added an "Open full report in new tab" link and
+  load/error status feedback.
+
 ### Changed
 
 - Rebranded the project to **OrgLens**; CLI command is now `orglens`.

@@ -184,8 +184,11 @@ function htmlPage(defaults: UiOptions): string {
     </section>
 
     <section class="card">
-      <h3>Report Preview</h3>
-      <iframe id="reportFrame"></iframe>
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0">Report Preview</h3>
+        <a id="reportLink" href="#" target="_blank" rel="noopener" style="display:none;color:#60a5fa;font-size:13px">Open full report in new tab \u2197</a>
+      </div>
+      <iframe id="reportFrame" style="margin-top:10px"></iframe>
     </section>
   </main>
   <script>
@@ -197,6 +200,7 @@ function htmlPage(defaults: UiOptions): string {
     const componentStats = document.getElementById("componentStats");
     const status = document.getElementById("status");
     const frame = document.getElementById("reportFrame");
+    const reportLink = document.getElementById("reportLink");
     const modeSelect = document.getElementById("mode");
     const thresholdInput = document.getElementById("threshold");
     const ruleSearch = document.getElementById("ruleSearch");
@@ -455,11 +459,22 @@ function htmlPage(defaults: UiOptions): string {
           status.textContent = data.error || "Scan failed";
           return;
         }
-        status.textContent = "Done. " + data.message + " (report: " + data.reportPath + ")";
         if (data.reportPath.endsWith(".html")) {
-          frame.src = "/api/report?path=" + encodeURIComponent(data.reportPath);
+          // srcdoc takes precedence over src in browsers, so clear it first;
+          // add a cache-buster so re-runs to the same path always reload.
+          const url = "/api/report?path=" + encodeURIComponent(data.reportPath) + "&t=" + Date.now();
+          frame.removeAttribute("srcdoc");
+          frame.onload = () => { status.textContent = "Done. Report rendered below \u2014 " + data.message; };
+          frame.onerror = () => { status.textContent = "Report generated but preview failed to load. Open it directly: " + data.reportPath; };
+          frame.src = url;
+          reportLink.href = url;
+          reportLink.style.display = "inline";
+          status.textContent = "Done. Rendering report... (report: " + data.reportPath + ")";
         } else {
-          frame.srcdoc = "<pre style='white-space:pre-wrap;padding:10px'>" + JSON.stringify(data.result, null, 2) + "</pre>";
+          frame.removeAttribute("src");
+          frame.srcdoc = "<pre style='white-space:pre-wrap;padding:10px;font-family:monospace'>" + JSON.stringify(data.result, null, 2).replace(/</g, "&lt;") + "</pre>";
+          reportLink.style.display = "none";
+          status.textContent = "Done. " + data.message + " (report: " + data.reportPath + ")";
         }
       } catch (e) {
         status.textContent = "Scan request failed: " + e;

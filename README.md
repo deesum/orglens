@@ -294,7 +294,9 @@ From here you can:
 - Choose output format, run **mode**, CI threshold, and AI provider
 - Set `package.xml`, target org, team, release train, and backlog path under
   **Advanced options**
-- Click **Run Scanner** and preview the report inline
+- Click **Run Scanner** and preview the report inline (or open it in a new tab)
+
+![OrgLens — report rendered inline in the UI](docs/screenshots/orglens-report-preview.png)
 
 ### Scan engines & rules panel
 
