@@ -11,11 +11,13 @@ export function runCommand(
   command: string,
   args: string[],
   cwd: string,
+  env: NodeJS.ProcessEnv = process.env,
 ): ProcessResult {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    env: process.env,
+    env,
+    maxBuffer: 32 * 1024 * 1024,
   });
 
   return {

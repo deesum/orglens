@@ -719,26 +719,11 @@
     }
   ],
   "trend": {
-    "previousSnapshotFile": "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition/.cre-snapshots/snapshot-2026-06-17T18-58-24.583Z.json",
-    "previousScore": 75,
-    "scoreDelta": 0,
-    "previousFindingCount": 4,
-    "findingDelta": 0,
-    "status": "unchanged"
+    "status": "no_baseline"
   },
   "history": [
     {
-      "timestamp": "2026-06-17T18:58:16.795Z",
-      "score": 75,
-      "findingCount": 4
-    },
-    {
-      "timestamp": "2026-06-17T18:58:24.582Z",
-      "score": 75,
-      "findingCount": 4
-    },
-    {
-      "timestamp": "2026-06-18T01:56:56.484Z",
+      "timestamp": "2026-06-19T13:18:33.421Z",
       "score": 75,
       "findingCount": 4
     }
@@ -879,5 +864,5 @@
     }
   ],
   "scannerStatus": "ok",
-  "timestamp": "2026-06-18T01:56:56.484Z"
+  "timestamp": "2026-06-19T13:18:33.421Z"
 }

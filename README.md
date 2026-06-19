@@ -10,6 +10,8 @@
 > **See it in action:** a real sample run lives in [`examples/`](./examples/) —
 > view the [rendered HTML report](https://raw.githack.com/deesum/orglens/main/examples/sample-report.html).
 
+![OrgLens — scan engines and rules panel](docs/screenshots/orglens-rules-panel.png)
+
 ---
 
 ## Table of Contents
@@ -67,6 +69,19 @@
 - Weighted **Health Score** with category breakdown (security,
   maintainability, reliability, performance, operability)
 - Confidence metric for analysis coverage
+- **Automatic Java detection** — finds an installed JDK (Homebrew, system, SDKMAN)
+  so the full Salesforce Code Analyzer runs even when macOS's `/usr/bin/java`
+  stub would otherwise block it; falls back to the lightweight scanner only when
+  no JDK exists
+- **Engine awareness** — see every scan engine (PMD, ESLint, ESLint-TypeScript,
+  RetireJS, Salesforce Graph Engine, plus the built-in lightweight engine), its
+  install status, and how to install/enable it; choose which engines to run
+- **Rule management** — list every available rule across all engines
+  (`orglens rules` — 200+ rules), then disable rules or override their severity
+  from the UI, CLI flags, or config (`ruleOverrides.disabled` /
+  `ruleOverrides.severity`)
+- **Scoring Guide** built into the HTML report and UI explaining what the
+  Health Score, letter grade, severities, confidence, and priority mean
 
 **Architect intelligence**
 
@@ -163,23 +178,24 @@ git --version
 
 ### 4.3 Java (JDK 17) — for full scanning
 
+PMD and the Salesforce Graph Engine need a JDK 11+. **You don't have to configure
+`JAVA_HOME` or `PATH`** — OrgLens automatically detects JDKs installed via
+Homebrew, the system (`/Library/Java/JavaVirtualMachines`, `/usr/lib/jvm`), or
+SDKMAN, and works around the macOS `/usr/bin/java` stub that otherwise blocks the
+scanner. Just install a JDK:
+
 **macOS (Homebrew):**
 
 ```bash
 brew install openjdk@17
-sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk \
-  /Library/Java/JavaVirtualMachines/openjdk-17.jdk
-echo 'export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
 ```
 
 **Windows:** `winget install EclipseAdoptium.Temurin.17.JDK`
 **Linux:** `sudo apt install openjdk-17-jdk`
-Verify:
 
-```bash
-java -version   # expect "17.x"
-```
+That's all. To confirm what OrgLens detected, run `orglens rules` — the footer
+prints the JDK path it's using (or tells you none was found). If no JDK is
+present, OrgLens still runs its built-in lightweight scanner.
 
 ### 4.4 Salesforce CLI
 
@@ -263,19 +279,43 @@ Prefer point-and-click? Launch the local UI:
 orglens ui --repo "/path/to/your/salesforce-project" --port 4173
 ```
 
-Open **http://127.0.0.1:4173** and you can:
+Open **http://127.0.0.1:4173**.
+
+![OrgLens Scanner UI — overview](docs/screenshots/orglens-ui-overview.png)
+
+From here you can:
 
 - Enter / confirm the project path (only required field)
+- Read the built-in **Scoring Guide** explainer (Health Score, grade, severities)
 - Pick component **types** (Apex, LWC, Flow, and more) — selecting a type
-  auto-selects its components
-- Optionally narrow to specific **component names** (with search + select-all)
-- See the live list of **selected components**
+  auto-selects its components — and optionally narrow to specific **component
+  names** (checkboxes show exactly what's selected)
+- **Load Rules & Engines** to see every scan engine and all available rules
 - Choose output format, run **mode**, CI threshold, and AI provider
 - Set `package.xml`, target org, team, release train, and backlog path under
   **Advanced options**
 - Click **Run Scanner** and preview the report inline
 
-> Tip: if the UI looks stale after an update, hard refresh (`Cmd/Ctrl+Shift+R`).
+### Scan engines & rules panel
+
+Click **Load Rules & Engines** to populate the catalog:
+
+![OrgLens — scan engines and rules panel](docs/screenshots/orglens-rules-panel.png)
+
+- Each **engine card** shows its status — `Installed`, `Needs Java`, or
+  `Not installed` — with install directions when it's unavailable, and a
+  checkbox to include/exclude that engine from the run (Salesforce Graph Engine
+  is off by default since it's heavier)
+- The **rules table** lists every available rule across engines with its engine,
+  default severity, and a docs link. Use the search box and **engine filter** to
+  narrow the list
+- Untick a rule's checkbox to **disable** it, or use the dropdown to **override
+  its severity**; **Apply All / Apply None / Reset Severities** act in bulk
+- Your selections are applied on the next **Run Scanner**
+
+> Tip: if the UI looks stale after an update, the old server is probably still
+> running. Stop it (`pkill -f "dist/cli.js ui"`), rebuild (`npm run build`),
+> restart, and hard refresh the browser (`Cmd/Ctrl+Shift+R`).
 
 ---
 
@@ -374,14 +414,15 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 
 ## 12. Troubleshooting
 
-| Symptom                                                      | Cause                                   | Fix                                                                                                        |
-| ------------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Scanner Status: failed` / "Unable to locate a Java Runtime" | Java not installed/on PATH              | Install JDK 17 ([§4.3](#43-java-jdk-17--for-full-scanning)); CRE still runs the fallback scanner meanwhile |
-| Few findings on a large org                                  | Only the fallback scanner ran           | Install Java + `sfdx-scanner` for full PMD/ESLint coverage                                                 |
-| `orglens: command not found`                                 | `npm link` not run / shell not reloaded | Re-run `npm run build && npm link`, open a new terminal                                                    |
-| UI shows an old version                                      | Stale server process                    | Stop the old `orglens ui` process, restart it, hard refresh the browser                                    |
-| No components found                                          | Wrong project path                      | Pass the project root; CRE auto-detects `force-app/main/default` underneath                                |
-| Recommendations empty                                        | No API key                              | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional)                                                     |
+| Symptom                                                      | Cause                                                              | Fix                                                                                                                          |
+| ------------------------------------------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| "Used lightweight fallback checks" / few findings            | No JDK found, so PMD/Graph Engine couldn't run                     | Install a JDK 11+ (`brew install openjdk@17`). OrgLens auto-detects it — no `JAVA_HOME`/`PATH` setup needed                  |
+| "Unable to locate a Java Runtime" despite Java installed     | macOS `/usr/bin/java` stub shadows the real JDK                    | Fixed automatically — OrgLens probes Homebrew/system/SDKMAN JDKs and injects `JAVA_HOME` for the scanner                    |
+| An engine shows "Not installed"                              | Salesforce Code Analyzer plugin missing                           | `sf plugins install @salesforce/sfdx-scanner` (the engines panel shows the exact command)                                  |
+| `orglens: command not found`                                 | `npm link` not run / shell not reloaded                           | Re-run `npm run build && npm link`, open a new terminal                                                                     |
+| UI shows an old version                                      | A stale `orglens ui` server is still running the old build        | `pkill -f "dist/cli.js ui"`, then `npm run build`, restart the server, hard refresh (`Cmd/Ctrl+Shift+R`)                    |
+| No components found                                          | Wrong project path                                                | Pass the project root; OrgLens auto-detects `force-app/main/default` underneath                                            |
+| Recommendations empty                                        | No API key                                                        | Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (optional)                                                                      |
 
 ---
 
@@ -408,6 +449,37 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 | `--summary-out <path>`           | —                      | Write a compact Markdown summary (for PR comments)                    |
 | `--create-jira`                  | off                    | Create Jira issues from the backlog (dry run unless `--jira-execute`) |
 | `--jira-execute`                 | off                    | Actually create Jira issues (requires `JIRA_*` env vars)              |
+| `--disable-rules <list>`         | —                      | Comma-separated rule names to exclude from results                    |
+| `--severity-overrides <pairs>`   | —                      | Comma-separated `RuleName=severity` pairs (e.g. `ApexDoc=low`)        |
+| `--engines <list>`               | scanner defaults       | Comma-separated engines to run (e.g. `pmd,eslint`)                    |
+
+### `orglens rules`
+
+List every scan engine and **all** the rules they provide (200+ across PMD,
+ESLint, ESLint-TypeScript, RetireJS, Salesforce Graph Engine, and the built-in
+lightweight engine), each with its default severity and category. Engines that
+aren't installed — or that need Java — are flagged with install directions. Use
+this to decide what to disable or re-prioritize, then feed those choices back
+via `--disable-rules` / `--severity-overrides` / `--engines`, the config file
+(`ruleOverrides`), or the **Rules panel** in the browser UI.
+
+| Option     | Default | Description                     |
+| ---------- | ------- | ------------------------------- |
+| `--json`   | off     | Output the catalog as JSON      |
+
+```bash
+orglens rules
+orglens analyze --repo ./force-app \
+  --engines pmd,eslint \
+  --disable-rules ApexDoc,TodoComment \
+  --severity-overrides ApexCRUDViolation=critical
+```
+
+> **Java:** PMD and Salesforce Graph Engine need a JDK 11+. OrgLens auto-detects
+> Homebrew (`/opt/homebrew/opt/openjdk@17`), system JVMs, and SDKMAN installs —
+> no `JAVA_HOME` or `PATH` setup required. If no JDK is found, install one with
+> `brew install openjdk@17` (macOS) or from [Adoptium](https://adoptium.net),
+> and OrgLens picks it up automatically.
 
 ### `orglens diff`
 

@@ -14,6 +14,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Automatic Java detection** — OrgLens now locates an installed JDK (Homebrew,
+  system JVMs, SDKMAN) and runs the real Salesforce Code Analyzer even when
+  macOS's `/usr/bin/java` stub would block it. The lightweight fallback is only
+  used when no JDK is present.
+- **Engine awareness** — `orglens rules` and the UI now show every scan engine
+  (PMD, ESLint, ESLint-TypeScript, RetireJS, Salesforce Graph Engine, plus the
+  built-in lightweight engine) with install status and directions. New
+  `--engines` analyze flag (and UI engine checkboxes) choose which engines run.
+- **Full rule catalog** — `orglens rules` now lists *all* rules available across
+  installed engines (200+), not just the rules that fired, each with default
+  severity and category. The UI Rules panel loads the full catalog with an
+  engine filter, apply toggles, severity overrides, and per-rule docs links.
+- **Rule management** — rules can be disabled or re-prioritized via
+  `--disable-rules` / `--severity-overrides` CLI flags, the `ruleOverrides`
+  config block, or the interactive Rules panel in the UI.
+- **Scoring Guide** — a built-in explainer (HTML report section + collapsible UI
+  help) describing the Health Score, letter grade, category breakdown, severity
+  points, confidence, blast radius, and priority.
 - **MIT License** — project is now open source.
 - **Letter grade (A–F)** scorecard alongside the numeric Health Score.
 - **What-If Simulator** — projected score lift per rule / component / severity group.

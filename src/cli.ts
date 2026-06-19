@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { analyzeCommand } from "./commands/analyze.js";
 import { diffCommand } from "./commands/diff.js";
 import { askCommand } from "./commands/ask.js";
+import { rulesCommand } from "./commands/rules.js";
 import { MetadataType, OutputFormat, RunMode } from "./types/models.js";
 import { startUiServer } from "./ui/server.js";
 
@@ -60,6 +61,18 @@ program
     "--jira-execute",
     "Actually create Jira issues (requires JIRA_* env vars)",
   )
+  .option(
+    "--disable-rules <list>",
+    "Comma-separated rule names to exclude from results",
+  )
+  .option(
+    "--severity-overrides <pairs>",
+    "Comma-separated RuleName=severity pairs (e.g. ApexDoc=low)",
+  )
+  .option(
+    "--engines <list>",
+    "Comma-separated scan engines to run (e.g. pmd,eslint). Default: scanner defaults",
+  )
   .action(async (opts) => {
     await analyzeCommand({
       repo: opts.repo,
@@ -89,7 +102,38 @@ program
             .map((v) => v.trim())
             .filter(Boolean)
         : undefined,
+      disabledRules: opts.disableRules
+        ? `${opts.disableRules}`
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : undefined,
+      severityOverrides: opts.severityOverrides
+        ? Object.fromEntries(
+            `${opts.severityOverrides}`
+              .split(",")
+              .map((pair) => pair.split("="))
+              .filter((parts) => parts.length === 2)
+              .map(([rule, sev]) => [rule.trim(), sev.trim().toLowerCase()]),
+          )
+        : undefined,
+      engines: opts.engines
+        ? `${opts.engines}`
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : undefined,
     });
+  });
+
+program
+  .command("rules")
+  .description(
+    "List all available scan engines and their rules (with default severity)",
+  )
+  .option("--json", "Output the catalog as JSON")
+  .action((opts) => {
+    rulesCommand({ json: Boolean(opts.json) });
   });
 
 program

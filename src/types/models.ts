@@ -107,6 +107,49 @@ export interface BacklogItem {
   jiraLabels: string[];
 }
 
+export interface RuleCatalogEntry {
+  ruleName: string;
+  category: string;
+  defaultSeverity: Severity;
+  count: number;
+  metadataTypes: string[];
+  url?: string;
+}
+
+export type EngineStatus = "available" | "needs_java" | "not_installed";
+
+export interface EngineInfo {
+  id: string;
+  name: string;
+  description: string;
+  languages: string[];
+  requiresJava: boolean;
+  status: EngineStatus;
+  available: boolean;
+  ruleCount: number;
+  installHint?: string;
+}
+
+export interface AvailableRule {
+  ruleName: string;
+  engine: string;
+  category: string;
+  categories: string[];
+  languages: string[];
+  defaultSeverity: Severity;
+  defaultEnabled: boolean;
+  isPilot: boolean;
+  url?: string;
+}
+
+export interface RuleCatalogResult {
+  engines: EngineInfo[];
+  rules: AvailableRule[];
+  javaHome?: string;
+  scannerStatus: "ok" | "needs_java" | "not_installed";
+  message?: string;
+}
+
 export type GradeLetter = "A" | "B" | "C" | "D" | "F";
 
 export interface Grade {
@@ -184,4 +227,7 @@ export interface AnalyzeOptions {
   summaryOut?: string;
   createJira?: boolean;
   jiraExecute?: boolean;
+  disabledRules?: string[];
+  severityOverrides?: Record<string, string>;
+  engines?: string[];
 }

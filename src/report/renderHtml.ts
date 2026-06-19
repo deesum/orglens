@@ -580,6 +580,7 @@ export function renderHtml(result: AnalysisResult): string {
   <nav class="topbar">
     <span class="brand">🔍 OrgLens</span>
     <a href="#overview">Overview</a>
+    <a href="#guide">Scoring Guide</a>
     <a href="#rules">Rule Summary</a>
     <a href="#recommendations">Recommendations</a>
     <a href="#quickwins">Quick Wins</a>
@@ -660,6 +661,40 @@ export function renderHtml(result: AnalysisResult): string {
         <h3>Most Affected Components <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:6px">— click any chip to filter All Issues</span></h3>
         <div class="comp-chips" id="compChips">${compChipsHtml}</div>
       </article>
+    </section>
+
+    <!-- ═══ SCORING GUIDE ══════════════════════════════════════════════════ -->
+    <section id="guide">
+      <h2>Scoring Guide <span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:8px">What these numbers mean</span></h2>
+      <details>
+        <summary>How the Health Score &amp; Grade are calculated</summary>
+        <div style="padding:16px 18px">
+          <p style="color:var(--muted);margin-bottom:12px">
+            The <strong style="color:var(--text)">Health Score (0–100)</strong> is a weighted average of five category
+            scores. Each category starts at 100 and loses points for every finding based on its severity — so a lower
+            score means more, or more severe, technical debt.
+          </p>
+          <div class="breakdown-grid" style="margin-bottom:14px">
+            <div class="breakdown-item"><div class="b-val c-low">A</div><div class="b-label">90–100 Excellent</div></div>
+            <div class="breakdown-item"><div class="b-val c-low">B</div><div class="b-label">80–89 Good</div></div>
+            <div class="breakdown-item"><div class="b-val c-medium">C</div><div class="b-label">70–79 Fair</div></div>
+            <div class="breakdown-item"><div class="b-val c-critical">D</div><div class="b-label">60–69 Poor</div></div>
+            <div class="breakdown-item"><div class="b-val c-critical">F</div><div class="b-label">&lt;60 Critical</div></div>
+          </div>
+          <p style="color:var(--muted);margin-bottom:6px"><strong style="color:var(--text)">Your grade:</strong> <span class="${gradeClass}" style="font-weight:800">${escapeHtml(grade.letter)} — ${escapeHtml(grade.label)}</span> at score ${result.score.overall}/100.</p>
+          <table style="margin-top:12px">
+            <thead><tr><th>Concept</th><th>What it means</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Categories</strong></td><td>Security, Maintainability, Reliability, Performance, Operability — each scored independently (see Score Breakdown above) so you can see where debt concentrates.</td></tr>
+              <tr><td><strong>Severity points</strong></td><td>Deducted per finding (defaults, configurable): Critical −25 · High −15 · Medium −8 · Low −3.</td></tr>
+              <tr><td><strong>Confidence</strong></td><td>How much of the project the analysis could map. Low confidence usually means Java + Salesforce Code Analyzer weren't installed, so only the lightweight fallback ran.</td></tr>
+              <tr><td><strong>Priority</strong></td><td>Each issue is ranked by severity × blast radius (how many components depend on it) × effort.</td></tr>
+              <tr><td><strong>Effort (S/M/L)</strong></td><td>Estimated fix size. <span class="badge eff-S">S</span> short · <span class="badge eff-M">M</span> medium · <span class="badge eff-L">L</span> large.</td></tr>
+              <tr><td><strong>Blast radius</strong></td><td>Number of dependent components impacted if the flagged component changes — higher means riskier to leave unaddressed.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
 
     <!-- ═══ RULE SUMMARY ═══════════════════════════════════════════════════ -->

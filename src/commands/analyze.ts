@@ -22,6 +22,10 @@ import { renderMarkdown } from "../report/renderMarkdown.js";
 import { buildBacklogItems, writeBacklogCsv } from "../report/backlogExport.js";
 import { buildPlaybook } from "../report/playbook.js";
 import { applySuppressions } from "../rules/suppressions.js";
+import {
+  applyRuleOverrides,
+  resolveRuleOverrides,
+} from "../rules/ruleOverrides.js";
 import { computeConfidence } from "../scoring/confidence.js";
 import { computeScore } from "../scoring/scoreModel.js";
 import { computeGrade } from "../scoring/grade.js";
@@ -126,7 +130,7 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
     config.llm.provider = options.provider;
   }
 
-  const scannerRun = runCodeAnalyzer(repoPath);
+  const scannerRun = runCodeAnalyzer(repoPath, { engines: options.engines });
   const roots = detectMetadataRoots(repoPath);
   const discoveredNodes = roots.flatMap((root) => {
     const core = [...parseApex(root), ...parseLwc(root), ...parseFlows(root)];
@@ -151,7 +155,17 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
       options.components,
     );
   const graph = buildDependencyGraph(parsedNodes);
-  const { activeFindings } = applySuppressions(scannerFindings, config);
+  const { activeFindings: suppressedFindings } = applySuppressions(
+    scannerFindings,
+    config,
+  );
+  const activeFindings = applyRuleOverrides(
+    suppressedFindings,
+    resolveRuleOverrides(config, {
+      disabledRules: options.disabledRules,
+      severityOverrides: options.severityOverrides,
+    }),
+  );
   const confidence = computeConfidence(activeFindings, graph);
   const score = computeScore(activeFindings, config, confidence);
 
@@ -235,7 +249,8 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
   // Default the backlog next to the report so a read-only scanned repo never
   // blocks the export (the report dir is always chosen to be writable).
   const backlogOutputPath =
-    options.backlogOut ?? path.resolve(path.dirname(outputPath), "orglens-backlog.csv");
+    options.backlogOut ??
+    path.resolve(path.dirname(outputPath), "orglens-backlog.csv");
   try {
     writeBacklogCsv(backlog, backlogOutputPath);
     console.log(`Backlog export written to ${backlogOutputPath}`);
@@ -251,7 +266,9 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
       fs.writeFileSync(summaryPath, renderSummary(result), "utf8");
       console.log(`Summary written to ${summaryPath}`);
     } catch (error) {
-      console.warn(`Skipped summary export: ${error instanceof Error ? error.message : error}`);
+      console.warn(
+        `Skipped summary export: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 

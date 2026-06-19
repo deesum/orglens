@@ -19,6 +19,16 @@ priority:
   effortWeight: 0.15
 suppression:
   rules: []
+ruleOverrides:
+  # Rule names to exclude entirely from findings and scoring.
+  # Run `orglens rules --repo <path>` to see every rule detected in your project.
+  disabled: []
+  # Override a rule's default severity. Allowed values: critical | high | medium | low.
+  # Example:
+  #   severity:
+  #     ApexDoc: low
+  #     ApexCRUDViolation: critical
+  severity: {}
 llm:
   enabled: true
   provider: openai

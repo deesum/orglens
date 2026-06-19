@@ -7,8 +7,17 @@ This guide shows how to run `orglens` against your Salesforce org alias `fslspec
 - Node.js 20+
 - Salesforce CLI (`sf`) installed
 - Salesforce Code Analyzer plugin available to `sf`
+  (`sf plugins install @salesforce/sfdx-scanner`)
+- A JDK 11+ for PMD / Graph Engine (`brew install openjdk@17`) — OrgLens
+  auto-detects it; no `JAVA_HOME`/`PATH` setup required
 - Optional for recommendations:
   - `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`
+
+List all engines and rules (and confirm the detected JDK):
+
+```bash
+orglens rules
+```
 
 ## 2) Install and link the CLI locally
 
@@ -114,7 +123,11 @@ orglens analyze --repo . --target-org fslspecialedition --format md --provider a
 orglens ui --repo "/Users/dsumra/Documents/VSCodeProjects/fslspecialedition/fslspecialedition" --port 4173
 ```
 
-Then open `http://127.0.0.1:4173`, load components, choose scope, and run.
+Then open `http://127.0.0.1:4173`, load components, click **Load Rules &
+Engines** to choose engines/rules and override severities, then **Run Scanner**.
+
+> If the UI looks stale after rebuilding, stop the old server
+> (`pkill -f "dist/cli.js ui"`), rebuild, restart, and hard refresh the browser.
 
 ## 9) Export Jira-ready backlog
 

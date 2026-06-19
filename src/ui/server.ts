@@ -3,6 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { URL } from "node:url";
 import { analyzeCommand } from "../commands/analyze.js";
+import { collectRuleCatalog } from "../commands/rules.js";
 import { parseApex } from "../parser/apexParser.js";
 import { parseFlows } from "../parser/flowParser.js";
 import { parseLwc } from "../parser/lwcParser.js";
@@ -46,12 +47,44 @@ function htmlPage(defaults: UiOptions): string {
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .small { color: #94a3b8; font-size: 12px; }
     .scroll { max-height: 220px; overflow: auto; border: 1px solid #334155; border-radius: 8px; padding: 8px; }
+    .engine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 8px; }
+    .engine-card { border: 1px solid #334155; border-radius: 8px; padding: 10px; background: #0b1220; }
+    .engine-card.off { opacity: .8; }
+    .engine-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+    .engine-name { font-weight: 600; font-size: 13px; }
+    .eng-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+    .eng-ok { color: #22c55e; background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); }
+    .eng-java { color: #eab308; background: rgba(234,179,8,.12); border: 1px solid rgba(234,179,8,.3); }
+    .eng-off { color: #ef4444; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3); }
+    .engine-hint { margin-top: 6px; font-size: 11px; color: #cbd5e1; background: #1e293b; border-radius: 6px; padding: 6px 8px; }
+    .engine-hint code { color: #93c5fd; }
+    .engine-head input { width: auto; }
   </style>
 </head>
 <body>
   <main class="container">
     <h1>🔍 OrgLens — Scanner UI</h1>
     <p class="small">Run scanner with minimal input. Required: project path only. App auto-detects metadata roots.</p>
+
+    <section class="card">
+      <details>
+        <summary style="cursor:pointer;font-weight:600">📖 Understanding the Health Score (click to expand)</summary>
+        <div style="margin-top:10px" class="small">
+          <p><strong style="color:#e2e8f0">Health Score (0–100)</strong> is a weighted average of five category scores. Each category starts at 100 and loses points for every finding based on its severity. Higher is better.</p>
+          <p style="margin-top:8px"><strong style="color:#e2e8f0">Letter grade</strong> — a quick read of the score:</p>
+          <ul style="margin:4px 0 0 18px">
+            <li><strong style="color:#22c55e">A (90–100) Excellent</strong> · <strong style="color:#22c55e">B (80–89) Good</strong></li>
+            <li><strong style="color:#eab308">C (70–79) Fair</strong></li>
+            <li><strong style="color:#ef4444">D (60–69) Poor</strong> · <strong style="color:#ef4444">F (&lt;60) Critical</strong></li>
+          </ul>
+          <p style="margin-top:8px"><strong style="color:#e2e8f0">Categories</strong>: Security, Maintainability, Reliability, Performance, Operability — each is scored independently so you can see where the debt concentrates.</p>
+          <p style="margin-top:8px"><strong style="color:#e2e8f0">Severity points</strong> deducted per finding (defaults, configurable): Critical −25 · High −15 · Medium −8 · Low −3.</p>
+          <p style="margin-top:8px"><strong style="color:#e2e8f0">Confidence</strong> = how much of the project the analysis could map (coverage). Low confidence usually means Java + Salesforce Code Analyzer aren't installed, so only the lightweight fallback ran.</p>
+          <p style="margin-top:8px"><strong style="color:#e2e8f0">Priority</strong> ranks each issue by severity × blast radius (how many components depend on it) × effort (S/M/L).</p>
+        </div>
+      </details>
+    </section>
+
     <section class="card">
       <div class="grid">
         <div>
@@ -86,21 +119,39 @@ function htmlPage(defaults: UiOptions): string {
           </div>
         </div>
         <div>
-          <label>Component Names (optional, overrides broad scans)</label>
-          <input id="componentSearch" placeholder="Filter components..." />
+          <label>Components <span class="small" style="font-weight:400">(optional — leave all checked for a broad scan)</span></label>
+          <div class="row" style="margin-top:4px">
+            <input id="componentSearch" placeholder="Filter components..." style="flex:1" />
+            <button id="load" type="button" style="width:auto">Load</button>
+          </div>
           <div class="row" style="margin-top:8px">
-            <button id="selectAllComponents" type="button">Select All Visible</button>
-            <button id="clearAllComponents" type="button">Clear Selected</button>
+            <button id="selectAllComponents" type="button" style="width:auto">Select Visible</button>
+            <button id="clearAllComponents" type="button" style="width:auto">Clear</button>
           </div>
           <p id="componentStats" class="small"></p>
           <div id="components" class="scroll"></div>
-          <p class="small" style="margin-top:6px">Selected components:</p>
-          <div id="selectedComponents" class="scroll" style="max-height:120px"></div>
         </div>
       </div>
-      <div style="margin-top:10px">
-        <button id="load">Load Components</button>
+    </section>
+
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <strong>Scan engines &amp; rules</strong>
+          <p class="small" style="margin:4px 0 0">Load all rules available across the installed scan engines, choose which engines to run and which rules to apply, and override severities.</p>
+        </div>
+        <button id="loadRules" style="width:auto">Load Rules &amp; Engines</button>
       </div>
+      <p id="ruleStats" class="small" style="margin-top:8px"></p>
+      <div id="enginesContainer" class="engine-grid"></div>
+      <div class="row" style="margin:10px 0 6px;flex-wrap:wrap">
+        <input id="ruleSearch" placeholder="Filter rules..." style="max-width:240px" />
+        <select id="engineFilter" style="width:auto"><option value="">All engines</option></select>
+        <button id="selectAllRules" type="button" style="width:auto">Apply All</button>
+        <button id="clearAllRules" type="button" style="width:auto">Apply None</button>
+        <button id="resetSeverities" type="button" style="width:auto">Reset Severities</button>
+      </div>
+      <div id="rulesContainer" class="scroll" style="max-height:340px"></div>
     </section>
 
     <section class="card">
@@ -144,11 +195,15 @@ function htmlPage(defaults: UiOptions): string {
     const componentContainer = document.getElementById("components");
     const componentSearch = document.getElementById("componentSearch");
     const componentStats = document.getElementById("componentStats");
-    const selectedComponents = document.getElementById("selectedComponents");
     const status = document.getElementById("status");
     const frame = document.getElementById("reportFrame");
     const modeSelect = document.getElementById("mode");
     const thresholdInput = document.getElementById("threshold");
+    const ruleSearch = document.getElementById("ruleSearch");
+    const rulesContainer = document.getElementById("rulesContainer");
+    const ruleStats = document.getElementById("ruleStats");
+    const enginesContainer = document.getElementById("enginesContainer");
+    const engineFilter = document.getElementById("engineFilter");
 
     repoInput.value = ${JSON.stringify(safeRepo)};
     pkgInput.value = ${JSON.stringify(safePkg)};
@@ -160,12 +215,6 @@ function htmlPage(defaults: UiOptions): string {
       const visible = [...componentContainer.querySelectorAll("label")].filter(el => el.style.display !== "none").length;
       const selected = [...document.querySelectorAll(".component:checked")].length;
       componentStats.textContent = "Loaded: " + all + " | Visible: " + visible + " | Selected: " + selected;
-      const selectedNames = [...document.querySelectorAll(".component:checked")]
-        .map((el) => el.value)
-        .sort((a, b) => a.localeCompare(b));
-      selectedComponents.innerHTML = selectedNames.length
-        ? selectedNames.map((name) => '<div>'+name+'</div>').join("")
-        : '<div class="small">No components selected (broad scan by selected types).</div>';
     }
 
     function applyComponentFilter() {
@@ -218,6 +267,158 @@ function htmlPage(defaults: UiOptions): string {
       status.textContent = "Components loaded.";
     }
 
+    let loadedRules = [];
+    let loadedEngines = [];
+    let ruleState = {};
+    let engineState = {};
+
+    function sevColor(s) {
+      return s === "critical" ? "#ef4444" : s === "high" ? "#f97316" : s === "medium" ? "#eab308" : "#22c55e";
+    }
+
+    function engineName(id) {
+      const e = loadedEngines.find((x) => x.id === id);
+      return e ? e.name : id;
+    }
+
+    function renderEngines() {
+      enginesContainer.innerHTML = loadedEngines
+        .map((e) => {
+          const badge =
+            e.status === "available"
+              ? '<span class="eng-badge eng-ok">Installed</span>'
+              : e.status === "needs_java"
+                ? '<span class="eng-badge eng-java">Needs Java</span>'
+                : '<span class="eng-badge eng-off">Not installed</span>';
+          const checkable = e.available && e.id !== "orglens-lite";
+          const checkbox = checkable
+            ? '<input type="checkbox" class="engine-run" data-engine="' + e.id + '"' + (engineState[e.id] ? " checked" : "") + ' title="Run this engine" />'
+            : "";
+          const hint = e.installHint
+            ? '<div class="engine-hint">' + e.installHint.replace(/(sf plugins install [^\\s]+|brew install [^\\s]+)/g, "<code>$1</code>") + "</div>"
+            : "";
+          return (
+            '<div class="engine-card ' + (e.available ? "" : "off") + '">' +
+            '<div class="engine-head"><span class="engine-name">' + checkbox + " " + e.name + "</span>" + badge + "</div>" +
+            '<div class="small" style="margin-top:4px">' + e.description + "</div>" +
+            '<div class="small" style="margin-top:4px">' + e.ruleCount + " rules · " + (e.languages || []).join(", ") + "</div>" +
+            hint +
+            "</div>"
+          );
+        })
+        .join("") || '<p class="small">No engines detected.</p>';
+    }
+
+    function renderEngineFilter() {
+      const current = engineFilter.value;
+      const ids = [...new Set(loadedRules.map((r) => r.engine))].sort();
+      engineFilter.innerHTML =
+        '<option value="">All engines (' + loadedRules.length + ")</option>" +
+        ids
+          .map((id) => {
+            const n = loadedRules.filter((r) => r.engine === id).length;
+            return '<option value="' + id + '">' + engineName(id) + " (" + n + ")</option>";
+          })
+          .join("");
+      engineFilter.value = current;
+    }
+
+    function renderRules() {
+      const q = (ruleSearch.value || "").toLowerCase().trim();
+      const eng = engineFilter.value;
+      const visible = loadedRules.filter(
+        (r) =>
+          (!eng || r.engine === eng) &&
+          (!q || r.ruleName.toLowerCase().includes(q) || (r.category || "").toLowerCase().includes(q) || r.engine.toLowerCase().includes(q)),
+      );
+      rulesContainer.innerHTML =
+        visible
+          .map((r) => {
+            const st = ruleState[r.ruleName] || { apply: r.defaultEnabled !== false, sev: "__keep__" };
+            const opts = ["__keep__", "critical", "high", "medium", "low"]
+              .map(
+                (s) =>
+                  '<option value="' + s + '"' + (s === st.sev ? " selected" : "") + ">" +
+                  (s === "__keep__" ? "keep (" + r.defaultSeverity + ")" : s) +
+                  "</option>",
+              )
+              .join("");
+            const docLink = r.url ? ' <a href="' + r.url + '" target="_blank" rel="noopener" style="color:#60a5fa">docs↗</a>' : "";
+            const pilot = r.isPilot ? ' <span class="eng-badge eng-java" style="font-size:9px">pilot</span>' : "";
+            return (
+              '<div data-rule="' + r.ruleName + '" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1f2937">' +
+              '<input type="checkbox" class="rule-apply" style="width:auto"' + (st.apply ? " checked" : "") + ' title="Apply this rule" />' +
+              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + r.ruleName + pilot + ' <span class="small">[' + r.category + ']' + docLink + "</span></span>" +
+              '<span class="small" style="width:118px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + r.engine + '">' + engineName(r.engine) + "</span>" +
+              '<span style="width:64px;color:' + sevColor(r.defaultSeverity) + ';font-weight:600;font-size:12px">' + r.defaultSeverity + "</span>" +
+              '<select class="rule-sev" style="width:120px">' + opts + "</select>" +
+              "</div>"
+            );
+          })
+          .join("") || '<p class="small">No rules match the filter. Click "Load Rules & Engines" first.</p>';
+    }
+
+    async function loadRules() {
+      ruleStats.textContent = "Loading engines & rules (querying Code Analyzer)...";
+      try {
+        const res = await fetch("/api/rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        const data = await res.json();
+        if (!res.ok) { ruleStats.textContent = data.error || "Failed to load rules"; return; }
+        loadedRules = data.rules || [];
+        loadedEngines = data.engines || [];
+        ruleState = {};
+        loadedRules.forEach((r) => { ruleState[r.ruleName] = { apply: r.defaultEnabled !== false, sev: "__keep__" }; });
+        engineState = {};
+        loadedEngines.forEach((e) => {
+          // Default-run standard engines; leave heavier/optional ones (sfge) off.
+          if (e.available && e.id !== "orglens-lite") engineState[e.id] = e.id !== "sfge";
+        });
+        renderEngines();
+        renderEngineFilter();
+        renderRules();
+        ruleStats.textContent =
+          loadedRules.length + " rules across " + loadedEngines.filter((e) => e.available).length + " engines" +
+          (data.message ? " \u00b7 " + data.message : "");
+      } catch (e) {
+        ruleStats.textContent = "Failed to load rules: " + e;
+      }
+    }
+
+    function getRuleSelections() {
+      const disabled = [];
+      const severityOverrides = {};
+      for (const rule of Object.keys(ruleState)) {
+        const st = ruleState[rule];
+        if (!st.apply) disabled.push(rule);
+        else if (st.sev && st.sev !== "__keep__") severityOverrides[rule] = st.sev;
+      }
+      return { disabled, severityOverrides };
+    }
+
+    function getSelectedEngines() {
+      const ids = Object.keys(engineState).filter((id) => engineState[id]);
+      // Only forward an explicit engine list when the user has narrowed it;
+      // otherwise let the scanner use its defaults.
+      const available = loadedEngines.filter((e) => e.available && e.id !== "orglens-lite").map((e) => e.id);
+      const allStandard = available.filter((id) => id !== "sfge");
+      const same = ids.length === allStandard.length && allStandard.every((id) => ids.includes(id));
+      return same ? [] : ids;
+    }
+
+    rulesContainer.addEventListener("change", (e) => {
+      const row = e.target.closest("[data-rule]");
+      if (!row) return;
+      const rule = row.getAttribute("data-rule");
+      ruleState[rule] = ruleState[rule] || { apply: true, sev: "__keep__" };
+      if (e.target.classList.contains("rule-apply")) ruleState[rule].apply = e.target.checked;
+      if (e.target.classList.contains("rule-sev")) ruleState[rule].sev = e.target.value;
+    });
+
+    enginesContainer.addEventListener("change", (e) => {
+      if (!e.target.classList.contains("engine-run")) return;
+      engineState[e.target.getAttribute("data-engine")] = e.target.checked;
+    });
+
     async function runScan() {
       const runBtn = document.getElementById("run");
       runBtn.disabled = true;
@@ -225,6 +426,7 @@ function htmlPage(defaults: UiOptions): string {
       status.textContent = "Running scanner...";
       const typeValues = [...document.querySelectorAll(".type:checked")].map(e => e.value);
       const componentValues = [...document.querySelectorAll(".component:checked")].map(e => e.value);
+      const ruleSel = getRuleSelections();
       const payload = {
         repo: repoInput.value,
         packagePath: pkgInput.value || undefined,
@@ -237,7 +439,10 @@ function htmlPage(defaults: UiOptions): string {
         provider: document.getElementById("provider").value || undefined,
         backlogOut: document.getElementById("backlogOut").value || undefined,
         componentTypes: typeValues,
-        components: componentValues
+        components: componentValues,
+        disabledRules: ruleSel.disabled,
+        severityOverrides: ruleSel.severityOverrides,
+        engines: getSelectedEngines()
       };
       try {
         const res = await fetch("/api/analyze", {
@@ -299,6 +504,22 @@ function htmlPage(defaults: UiOptions): string {
       thresholdInput.disabled = !isCi;
     });
     modeSelect.dispatchEvent(new Event("change"));
+
+    document.getElementById("loadRules").addEventListener("click", loadRules);
+    ruleSearch.addEventListener("input", renderRules);
+    engineFilter.addEventListener("change", renderRules);
+    document.getElementById("selectAllRules").addEventListener("click", () => {
+      Object.keys(ruleState).forEach((k) => { ruleState[k].apply = true; });
+      renderRules();
+    });
+    document.getElementById("clearAllRules").addEventListener("click", () => {
+      Object.keys(ruleState).forEach((k) => { ruleState[k].apply = false; });
+      renderRules();
+    });
+    document.getElementById("resetSeverities").addEventListener("click", () => {
+      Object.keys(ruleState).forEach((k) => { ruleState[k].sev = "__keep__"; });
+      renderRules();
+    });
 
     document.getElementById("load").addEventListener("click", loadComponents);
     document.getElementById("run").addEventListener("click", runScan);
@@ -377,6 +598,16 @@ export function startUiServer(opts: UiOptions): void {
       return;
     }
 
+    if (req.method === "POST" && reqUrl.pathname === "/api/rules") {
+      try {
+        const catalog = collectRuleCatalog();
+        sendJson(res, 200, catalog);
+      } catch (error) {
+        sendJson(res, 500, { error: `${error}` });
+      }
+      return;
+    }
+
     if (req.method === "POST" && reqUrl.pathname === "/api/analyze") {
       try {
         const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
@@ -409,6 +640,16 @@ export function startUiServer(opts: UiOptions): void {
             : undefined,
           components: Array.isArray(body.components)
             ? body.components.map((c) => `${c}`)
+            : undefined,
+          disabledRules: Array.isArray(body.disabledRules)
+            ? body.disabledRules.map((r) => `${r}`)
+            : undefined,
+          severityOverrides:
+            body.severityOverrides && typeof body.severityOverrides === "object"
+              ? (body.severityOverrides as Record<string, string>)
+              : undefined,
+          engines: Array.isArray(body.engines)
+            ? body.engines.map((e) => `${e}`)
             : undefined,
         });
         let result: unknown = null;

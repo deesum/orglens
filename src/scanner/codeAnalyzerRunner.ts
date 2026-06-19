@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { AnalyzerFinding } from "../types/models.js";
+import { javaAwareEnv, resolveJavaHome } from "../utils/javaHome.js";
 import { runCommand } from "../utils/process.js";
 import { runLightweightFallbackScanner } from "./lightweightFallbackScanner.js";
 import { normalizeFindings } from "./normalizeFindings.js";
@@ -60,23 +61,39 @@ export interface ScannerRunResult {
   message?: string;
 }
 
-export function runCodeAnalyzer(repoPath: string): ScannerRunResult {
-  const outFile = path.join(repoPath, ".cre-scanner-output.json");
+export interface RunCodeAnalyzerOptions {
+  engines?: string[];
+}
 
-  const command = runCommand(
-    "sf",
-    [
-      "scanner",
-      "run",
-      "--target",
-      repoPath,
-      "--format",
-      "json",
-      "--outfile",
-      outFile,
-    ],
-    repoPath,
+export function runCodeAnalyzer(
+  repoPath: string,
+  options: RunCodeAnalyzerOptions = {},
+): ScannerRunResult {
+  const outFile = path.join(repoPath, ".cre-scanner-output.json");
+  const env = javaAwareEnv();
+  const javaHome = resolveJavaHome();
+
+  // Pass explicit engine selection through to the scanner (excluding our
+  // internal lightweight engine, which isn't a real scanner engine).
+  const selectedEngines = (options.engines ?? []).filter(
+    (e) => e && e !== "orglens-lite",
   );
+
+  const args = [
+    "scanner",
+    "run",
+    "--target",
+    repoPath,
+    "--format",
+    "json",
+    "--outfile",
+    outFile,
+  ];
+  if (selectedEngines.length > 0) {
+    args.push("--engine", selectedEngines.join(","));
+  }
+
+  const command = runCommand("sf", args, repoPath, env);
 
   if (!command.ok) {
     const failureOutput = `${command.stderr}\n${command.stdout}`;
@@ -91,8 +108,9 @@ export function runCodeAnalyzer(repoPath: string): ScannerRunResult {
       return {
         findings: fallbackFindings,
         status: "ok",
-        message:
-          "Java runtime unavailable for Salesforce scanner. Used lightweight fallback checks for Apex/LWC patterns.",
+        message: javaHome
+          ? `Salesforce scanner could not use Java at ${javaHome}. Used lightweight fallback checks for Apex/LWC patterns. Install a JDK 11+ (e.g. 'brew install openjdk@17').`
+          : "No Java runtime found for the Salesforce scanner. Used lightweight fallback checks. Install a JDK 11+ (e.g. 'brew install openjdk@17') to unlock the full PMD/ESLint ruleset.",
       };
     }
 

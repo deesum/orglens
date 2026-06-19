@@ -34,6 +34,15 @@ export const configSchema = z.object({
       }),
     ),
   }),
+  ruleOverrides: z.object({
+    // Rule names to exclude entirely from scoring/findings.
+    disabled: z.array(z.string()),
+    // Map of ruleName -> severity to override the scanner's default.
+    severity: z.record(
+      z.string(),
+      z.enum(["critical", "high", "medium", "low"]),
+    ),
+  }),
   llm: z.object({
     enabled: z.boolean(),
     provider: z.enum(["openai", "anthropic"]),
@@ -93,6 +102,10 @@ export const defaultConfig: AgentConfig = {
   },
   suppression: {
     rules: [],
+  },
+  ruleOverrides: {
+    disabled: [],
+    severity: {},
   },
   llm: {
     enabled: true,
