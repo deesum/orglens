@@ -3,7 +3,7 @@
 All notable changes to OrgLens are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.2.0] - 2026-06-19
 
 ### Fixed
 
