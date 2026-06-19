@@ -20,7 +20,7 @@
 2. [What value does it provide?](#2-what-value-does-it-provide)
 3. [Feature overview](#3-feature-overview)
 4. [Prerequisites (and how to install each)](#4-prerequisites-and-how-to-install-each)
-5. [Install the CRE tool](#5-install-the-cre-tool)
+5. [Install OrgLens](#5-install-orglens)
 6. [Quick start (first run in 2 minutes)](#6-quick-start-first-run-in-2-minutes)
 7. [Using the Browser UI](#7-using-the-browser-ui)
 8. [Using the CLI](#8-using-the-cli)
@@ -34,18 +34,18 @@
 
 ## 1. Who is this for?
 
-| Persona                                    | How they use CRE                                                                                                                           |
+| Persona                                    | How they use OrgLens                                                                                                                       |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Technical Architect**                    | Rapid health assessment of an unfamiliar or inherited org, identify hotspots, justify refactoring with evidence, set governance baselines. |
 | **System Integrator (SI) / Delivery Lead** | Generate a prioritized remediation backlog, export to Jira, assign by team/release train, track trend across sprints.                      |
 | **Salesforce Developers**                  | See exactly which rule failed, where, why it matters, how to fix it, with a one-click link to the official rule documentation.             |
 | **Delivery / Engineering Managers**        | Track a single Health Score over time, gate pull requests on quality thresholds, report progress to stakeholders.                          |
-| **QA / Release Engineers**                 | Wire CRE into CI to fail or warn when code quality regresses.                                                                              |
+| **QA / Release Engineers**                 | Wire OrgLens into CI to fail or warn when code quality regresses.                                                                          |
 
 ## 2. What value does it provide?
 
 - **Cut "archaeology" time.** Architects normally spend hours digging through
-  metadata to understand debt. CRE produces a structured assessment in seconds.
+  metadata to understand debt. OrgLens produces a structured assessment in seconds.
 - **Prioritization, not just a wall of findings.** Every issue is ranked by
   severity × blast radius × effort so teams fix the things that matter first.
 - **Actionable, evidence-linked guidance.** Each finding shows _what, where,
@@ -122,7 +122,7 @@
 - Local Browser UI for point-and-click scans
 
 > **Note on coverage:** The full PMD + ESLint rule set requires Java + the
-> Salesforce Code Analyzer plugin. If Java is unavailable, CRE automatically
+> Salesforce Code Analyzer plugin. If Java is unavailable, OrgLens automatically
 > falls back to a lightweight regex scanner so you still get actionable output
 > (with reduced coverage). Install Java for complete results.
 
@@ -132,7 +132,7 @@
 
 | #   | Prerequisite               | Required?               | Purpose                           |
 | --- | -------------------------- | ----------------------- | --------------------------------- |
-| 1   | **Node.js 20+**            | ✅ Required             | Runs the CRE CLI/UI               |
+| 1   | **Node.js 20+**            | ✅ Required             | Runs the OrgLens CLI/UI           |
 | 2   | **Git**                    | ✅ Required             | Clone the repo                    |
 | 3   | **Java (JDK 17)**          | ⭐ Strongly recommended | Enables full PMD/ESLint scanning  |
 | 4   | **Salesforce CLI (`sf`)**  | ⭐ Recommended          | Provides the Code Analyzer plugin |
@@ -223,7 +223,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 ---
 
-## 5. Install the CRE tool
+## 5. Install OrgLens
 
 ```bash
 # 1. Clone
@@ -251,7 +251,7 @@ orglens --help
 
 ## 6. Quick start (first run in 2 minutes)
 
-Point CRE at any Salesforce project folder. It auto-detects metadata roots
+Point OrgLens at any Salesforce project folder. It auto-detects metadata roots
 (`force-app/main/default`, `apps/*/force-app/main/default`, etc.) — you do
 **not** need to point at the exact metadata folder.
 
@@ -401,7 +401,7 @@ orglens analyze --repo . --format md --mode governance
 
 ## 11. AI recommendations (optional)
 
-Without an API key, CRE generates solid heuristic recommendations. With a key,
+Without an API key, OrgLens generates solid heuristic recommendations. With a key,
 it produces richer, evidence-linked guidance:
 
 ```bash
