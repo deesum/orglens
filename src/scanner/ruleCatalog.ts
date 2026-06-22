@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { ruleDocUrl } from "../report/ruleDocs.js";
 import {
   AvailableRule,
@@ -9,14 +12,16 @@ import {
 } from "../types/models.js";
 import { javaAwareEnv, resolveJavaHome } from "../utils/javaHome.js";
 import { runCommand } from "../utils/process.js";
+import { adapterEngineInfos, adapterRules } from "./adapters/registry.js";
 
-interface RawRule {
-  engine?: string;
+// Salesforce Code Analyzer v5 (`sf code-analyzer rules`) JSON output shape.
+interface V5Rule {
   name?: string;
-  categories?: string[];
-  languages?: string[];
-  isPilot?: boolean;
-  defaultEnabled?: boolean;
+  description?: string;
+  engine?: string;
+  severity?: number;
+  tags?: string[];
+  resources?: string[];
 }
 
 interface EngineMeta {
@@ -28,7 +33,7 @@ interface EngineMeta {
 }
 
 const SCANNER_INSTALL_HINT =
-  "Install Salesforce Code Analyzer: sf plugins install @salesforce/sfdx-scanner";
+  "Install Salesforce Code Analyzer v5: sf plugins install code-analyzer";
 const JAVA_INSTALL_HINT =
   "Requires a JDK 11+. Install one (macOS: 'brew install openjdk@17', or see https://adoptium.net) — OrgLens auto-detects it; no PATH setup needed.";
 
@@ -44,22 +49,8 @@ const ENGINE_REGISTRY: EngineMeta[] = [
   {
     id: "eslint",
     name: "ESLint",
-    description: "Lightning (LWC/Aura) JavaScript linting.",
-    languages: ["javascript"],
-    requiresJava: false,
-  },
-  {
-    id: "eslint-lwc",
-    name: "ESLint LWC",
-    description: "Salesforce LWC-specific ESLint rules.",
-    languages: ["javascript"],
-    requiresJava: false,
-  },
-  {
-    id: "eslint-typescript",
-    name: "ESLint (TypeScript)",
-    description: "TypeScript linting for custom tooling.",
-    languages: ["typescript"],
+    description: "Lightning (LWC/Aura) JavaScript & TypeScript linting.",
+    languages: ["javascript", "typescript"],
     requiresJava: false,
   },
   {
@@ -70,11 +61,33 @@ const ENGINE_REGISTRY: EngineMeta[] = [
     requiresJava: false,
   },
   {
+    id: "regex",
+    name: "Regex",
+    description:
+      "Built-in pattern checks (trailing whitespace, TODOs, naming, etc.).",
+    languages: ["apex", "javascript"],
+    requiresJava: false,
+  },
+  {
+    id: "cpd",
+    name: "Copy/Paste Detector",
+    description: "Finds duplicated code blocks across the codebase.",
+    languages: ["apex", "javascript", "visualforce"],
+    requiresJava: true,
+  },
+  {
     id: "sfge",
     name: "Salesforce Graph Engine",
     description: "Data-flow (DFA) security analysis for Apex.",
     languages: ["apex"],
     requiresJava: true,
+  },
+  {
+    id: "flow",
+    name: "Flow",
+    description: "Static analysis for Salesforce Flows.",
+    languages: ["flow"],
+    requiresJava: false,
   },
   {
     id: "orglens-lite",
@@ -129,44 +142,65 @@ const LITE_RULES: AvailableRule[] = [
   },
 ];
 
-function severityFromCategories(categories: string[]): Severity {
-  const set = categories.map((c) => c.toLowerCase());
-  if (set.some((c) => c.includes("security"))) return "high";
-  if (set.some((c) => c.includes("error prone") || c.includes("errorprone")))
-    return "high";
-  if (set.some((c) => c.includes("performance"))) return "medium";
-  if (set.some((c) => c.includes("design") || c.includes("best practice")))
-    return "medium";
-  if (set.some((c) => c.includes("style") || c.includes("documentation")))
-    return "low";
-  return "medium";
+/** v5 severity is 1 (highest) .. 5 (info). */
+function mapSeverity(value: number | undefined): Severity {
+  switch (value) {
+    case 1:
+      return "critical";
+    case 2:
+      return "high";
+    case 3:
+      return "medium";
+    default:
+      return "low";
+  }
+}
+
+function categoryFromTags(tags: string[]): string {
+  const set = tags.map((t) => t.toLowerCase());
+  if (set.some((t) => t.includes("security"))) return "Security";
+  if (set.some((t) => t.includes("performance"))) return "Performance";
+  if (set.some((t) => t.includes("errorprone") || t.includes("correctness")))
+    return "Error Prone";
+  if (set.some((t) => t.includes("design"))) return "Design";
+  if (set.some((t) => t.includes("bestpractices"))) return "Best Practices";
+  if (set.some((t) => t.includes("documentation"))) return "Documentation";
+  if (set.some((t) => t.includes("codestyle"))) return "Code Style";
+  return "Best Practices";
 }
 
 function engineToMetadataType(
   engine: string,
-  languages: string[],
+  tags: string[],
 ): MetadataType {
-  if (engine.startsWith("eslint") || engine === "retire-js")
+  if (engine === "eslint" || engine === "retire-js")
     return "LightningComponentBundle";
-  if (languages.includes("visualforce")) return "Unknown";
+  if (engine === "flow") return "Flow";
+  if (tags.some((t) => t.toLowerCase().includes("javascript")))
+    return "LightningComponentBundle";
   return "ApexClass";
 }
 
 interface RuleListResult {
-  rules: RawRule[];
+  rules: V5Rule[];
   kind: "ok" | "needs_java" | "not_installed";
 }
 
-function runRuleList(engines?: string[]): RuleListResult {
+function runRuleList(): RuleListResult {
   const env = javaAwareEnv();
-  const args = ["scanner", "rule", "list", "--json"];
-  if (engines && engines.length > 0) {
-    args.push("--engine", engines.join(","));
-  }
-  const result = runCommand("sf", args, process.cwd(), env);
+  const outFile = path.join(
+    os.tmpdir(),
+    `orglens-rules-${process.pid}-${Date.now()}.json`,
+  );
+  const result = runCommand(
+    "sf",
+    ["code-analyzer", "rules", "--rule-selector", "all", "--output-file", outFile],
+    process.cwd(),
+    env,
+  );
   const combined = `${result.stderr}\n${result.stdout}`;
 
-  if (!result.ok) {
+  if (!fs.existsSync(outFile)) {
     if (
       /Unable to locate a Java Runtime|Could not fetch Java version/i.test(
         combined,
@@ -174,92 +208,86 @@ function runRuleList(engines?: string[]): RuleListResult {
     ) {
       return { rules: [], kind: "needs_java" };
     }
-    if (
-      /is not a [\w.]*\s*command|command not found|Cannot find module|No plugin found/i.test(
-        combined,
-      )
-    ) {
-      return { rules: [], kind: "not_installed" };
-    }
     return { rules: [], kind: "not_installed" };
   }
 
   try {
-    const parsed = JSON.parse(result.stdout) as unknown;
-    const rules = (
-      Array.isArray(parsed)
-        ? parsed
-        : ((parsed as { result?: RawRule[] }).result ?? [])
-    ) as RawRule[];
-    return { rules, kind: "ok" };
+    const parsed = JSON.parse(fs.readFileSync(outFile, "utf8")) as {
+      rules?: V5Rule[];
+    };
+    return { rules: parsed.rules ?? [], kind: "ok" };
   } catch {
     return { rules: [], kind: "not_installed" };
+  } finally {
+    try {
+      fs.unlinkSync(outFile);
+    } catch {
+      /* best effort cleanup */
+    }
   }
 }
 
-function toAvailableRule(raw: RawRule): AvailableRule | undefined {
+function toAvailableRule(raw: V5Rule): AvailableRule | undefined {
   if (!raw.name || !raw.engine) return undefined;
-  const categories = raw.categories ?? [];
-  const languages = raw.languages ?? [];
+  const tags = raw.tags ?? [];
+  const category = categoryFromTags(tags);
+  const docUrl =
+    (raw.resources ?? []).find((r) => /^https?:\/\//.test(r)) ??
+    ruleDocUrl({
+      ruleName: raw.name,
+      metadataType: engineToMetadataType(raw.engine, tags),
+      engine: raw.engine,
+    });
   return {
     ruleName: raw.name,
     engine: raw.engine,
-    category: categories[0] ?? "Uncategorized",
-    categories,
-    languages,
-    defaultSeverity: severityFromCategories(categories),
-    defaultEnabled: raw.defaultEnabled !== false,
-    isPilot: raw.isPilot === true,
-    url: ruleDocUrl({
-      ruleName: raw.name,
-      metadataType: engineToMetadataType(raw.engine, languages),
-    }),
+    category,
+    categories: tags,
+    languages: tags.filter((t) =>
+      ["apex", "javascript", "typescript", "visualforce", "flow"].includes(
+        t.toLowerCase(),
+      ),
+    ),
+    defaultSeverity: mapSeverity(raw.severity),
+    defaultEnabled: tags.includes("Recommended"),
+    isPilot: false,
+    url: docUrl,
   };
 }
 
 /**
- * Lists every rule available across the installed scan engines, plus the
- * built-in lightweight engine. Reports engine availability and install
- * directions for engines that are missing or need Java.
+ * Lists every rule available across the installed scan engines (Salesforce
+ * Code Analyzer v5 + pluggable adapters), plus the built-in lightweight engine.
+ * Reports engine availability and install directions for missing engines.
  */
 export function listAvailableRules(): RuleCatalogResult {
-  let { rules: raw, kind } = runRuleList();
-
-  // If the full listing failed because Java is missing, we can still enumerate
-  // the JavaScript engines that don't need a JVM.
-  if (kind === "needs_java") {
-    const jsOnly = runRuleList([
-      "eslint",
-      "eslint-lwc",
-      "eslint-typescript",
-      "retire-js",
-    ]);
-    if (jsOnly.kind === "ok") raw = jsOnly.rules;
-  }
+  const { rules: raw, kind } = runRuleList();
 
   const scannerRules = raw
     .map(toAvailableRule)
     .filter((r): r is AvailableRule => Boolean(r));
 
-  const rules = [...scannerRules, ...LITE_RULES].sort(
+  const externalRules = adapterRules();
+
+  const rules = [...scannerRules, ...LITE_RULES, ...externalRules].sort(
     (a, b) =>
       a.engine.localeCompare(b.engine) || a.ruleName.localeCompare(b.ruleName),
   );
 
   const countByEngine = new Map<string, number>();
-  for (const r of rules)
+  for (const r of scannerRules)
     countByEngine.set(r.engine, (countByEngine.get(r.engine) ?? 0) + 1);
 
   const javaOk = kind === "ok";
   const javaHome = resolveJavaHome();
 
-  const engines: EngineInfo[] = ENGINE_REGISTRY.map((meta) => {
+  const sfEngines: EngineInfo[] = ENGINE_REGISTRY.map((meta) => {
     if (meta.id === "orglens-lite") {
       return {
         ...meta,
         status: "available" as EngineStatus,
         available: true,
-        ruleCount: countByEngine.get(meta.id) ?? LITE_RULES.length,
+        ruleCount: LITE_RULES.length,
       };
     }
 
@@ -288,6 +316,8 @@ export function listAvailableRules(): RuleCatalogResult {
     (e) =>
       e.ruleCount > 0 || e.status !== "available" || e.id === "orglens-lite",
   );
+
+  const engines: EngineInfo[] = [...sfEngines, ...adapterEngineInfos()];
 
   const scannerStatus = kind;
   const message =

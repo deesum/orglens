@@ -28,6 +28,8 @@ export interface AnalyzerFinding {
   metadataType: MetadataType;
   references: string[];
   url?: string;
+  /** Scan engine that produced this finding (e.g. "pmd", "semgrep", "gitleaks"). */
+  engine?: string;
 }
 
 export interface MetadataNode {

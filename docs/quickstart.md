@@ -6,10 +6,13 @@ This guide shows how to run `orglens` against your Salesforce org alias `fslspec
 
 - Node.js 20+
 - Salesforce CLI (`sf`) installed
-- Salesforce Code Analyzer plugin available to `sf`
-  (`sf plugins install @salesforce/sfdx-scanner`)
-- A JDK 11+ for PMD / Graph Engine (`brew install openjdk@17`) — OrgLens
+- Salesforce Code Analyzer **v5** plugin available to `sf`
+  (`sf plugins install code-analyzer`)
+- A JDK 11+ for PMD / Graph Engine / CPD (`brew install openjdk@17`) — OrgLens
   auto-detects it; no `JAVA_HOME`/`PATH` setup required
+- Optional extra engines (light up automatically when installed):
+  - `brew install semgrep` (SAST), `brew install gitleaks` (secrets);
+    npm audit ships with Node.js
 - Optional for recommendations:
   - `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`
 

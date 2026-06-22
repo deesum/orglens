@@ -1,6 +1,18 @@
 import { AnalyzerFinding } from "../types/models.js";
 
 const PMD_DOCS_BASE = "https://docs.pmd-code.org/latest";
+const CA_GUIDE_BASE =
+  "https://developer.salesforce.com/docs/platform/salesforce-code-analyzer/guide";
+
+/** Salesforce Code Analyzer v5 per-engine documentation pages. */
+const ENGINE_DOCS: Record<string, string> = {
+  regex: `${CA_GUIDE_BASE}/engine-regex.html`,
+  eslint: `${CA_GUIDE_BASE}/engine-eslint.html`,
+  cpd: `${CA_GUIDE_BASE}/engine-cpd.html`,
+  pmd: `${CA_GUIDE_BASE}/engine-pmd.html`,
+  sfge: `${CA_GUIDE_BASE}/engine-sfge.html`,
+  flow: `${CA_GUIDE_BASE}/engine-flow.html`,
+};
 
 /**
  * Complete map of PMD Apex rule names (lowercased) to their documentation
@@ -111,7 +123,9 @@ function isEslintRule(ruleName: string): boolean {
  * Returns undefined only when no sensible link can be derived.
  */
 export function ruleDocUrl(
-  finding: Pick<AnalyzerFinding, "ruleName" | "metadataType">,
+  finding: Pick<AnalyzerFinding, "ruleName" | "metadataType"> & {
+    engine?: string;
+  },
 ): string | undefined {
   const raw = finding.ruleName?.trim();
   if (!raw || raw === "UnknownRule") return undefined;
@@ -125,11 +139,9 @@ export function ruleDocUrl(
       const short = raw.replace("@lwc/lwc/", "");
       return `https://github.com/salesforce/eslint-plugin-lwc/blob/master/docs/rules/${short}.md`;
     }
-    if (raw.startsWith("@salesforce/")) {
-      return "https://github.com/salesforce/eslint-plugin-lwc";
-    }
+    // Other Salesforce/scoped plugin rules → the Code Analyzer ESLint engine docs.
     if (raw.startsWith("@")) {
-      return `https://www.google.com/search?q=eslint+rule+${encodeURIComponent(raw)}`;
+      return ENGINE_DOCS.eslint;
     }
     return `https://eslint.org/docs/latest/rules/${raw}`;
   }
@@ -144,6 +156,12 @@ export function ruleDocUrl(
   const vfCategory = PMD_VF_CATEGORY[key];
   if (vfCategory) {
     return `${PMD_DOCS_BASE}/pmd_rules_visualforce_${vfCategory}.html#${key}`;
+  }
+
+  // Engine-specific fallback (regex, cpd, sfge, flow, ...) so every finding
+  // links to the relevant Code Analyzer engine guide rather than nothing.
+  if (finding.engine && ENGINE_DOCS[finding.engine]) {
+    return ENGINE_DOCS[finding.engine];
   }
 
   // Unknown Apex-style rule (PascalCase): link to the Apex rule index so the

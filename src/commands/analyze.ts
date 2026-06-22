@@ -35,7 +35,7 @@ import { buildOwnership } from "../analysis/ownership.js";
 import { buildHistory } from "../modes/history.js";
 import { renderSummary } from "../report/summaryReport.js";
 import { createJiraIssues } from "../integrations/jira.js";
-import { runCodeAnalyzer } from "../scanner/codeAnalyzerRunner.js";
+import { runAllScanners } from "../scanner/runScanners.js";
 import {
   AnalysisResult,
   AnalyzeOptions,
@@ -130,7 +130,7 @@ export async function analyzeCommand(options: AnalyzeOptions): Promise<void> {
     config.llm.provider = options.provider;
   }
 
-  const scannerRun = runCodeAnalyzer(repoPath, { engines: options.engines });
+  const scannerRun = runAllScanners(repoPath, { engines: options.engines });
   const roots = detectMetadataRoots(repoPath);
   const discoveredNodes = roots.flatMap((root) => {
     const core = [...parseApex(root), ...parseLwc(root), ...parseFlows(root)];

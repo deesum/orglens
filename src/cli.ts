@@ -14,7 +14,7 @@ program
   .description(
     "OrgLens — AI-powered Salesforce metadata health and tech-debt analyzer",
   )
-  .version("0.2.0");
+  .version("0.3.0");
 
 program
   .command("analyze")

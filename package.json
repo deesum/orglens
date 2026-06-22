@@ -1,6 +1,6 @@
 {
   "name": "orglens",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "OrgLens — AI-powered Salesforce metadata health and tech-debt analyzer (Health Score, prioritized findings with rule docs, dependency impact, Jira-ready backlog).",
   "main": "dist/cli.js",
   "bin": {

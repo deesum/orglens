@@ -73,11 +73,18 @@
   so the full Salesforce Code Analyzer runs even when macOS's `/usr/bin/java`
   stub would otherwise block it; falls back to the lightweight scanner only when
   no JDK exists
-- **Engine awareness** — see every scan engine (PMD, ESLint, ESLint-TypeScript,
-  RetireJS, Salesforce Graph Engine, plus the built-in lightweight engine), its
-  install status, and how to install/enable it; choose which engines to run
+- **Engine awareness** — built on **Salesforce Code Analyzer v5**; see every
+  scan engine (PMD, ESLint, RetireJS, Regex, Copy/Paste Detector, Salesforce
+  Graph Engine, Flow, plus the built-in lightweight engine), its install status,
+  and how to install/enable it; choose which engines to run
+- **Pluggable scanner adapters** — additional tools plug into the same Engines
+  panel and feed the **one combined Health Score**: **Semgrep** (SAST),
+  **Gitleaks** (secret scanning), and **npm audit** (dependency CVEs). Missing
+  tools are shown with install directions and skipped gracefully. Adding more
+  (Snyk, CodeQL, SonarQube, OWASP Dependency-Check) is a single adapter file —
+  see [Adding a scan engine](#adding-a-scan-engine)
 - **Rule management** — list every available rule across all engines
-  (`orglens rules` — 200+ rules), then disable rules or override their severity
+  (`orglens rules` — 700+ rules), then disable rules or override their severity
   from the UI, CLI flags, or config (`ruleOverrides.disabled` /
   `ruleOverrides.severity`)
 - **Scoring Guide** built into the HTML report and UI explaining what the
@@ -204,14 +211,29 @@ npm install -g @salesforce/cli
 sf --version
 ```
 
-### 4.5 Salesforce Code Analyzer plugin
+### 4.5 Salesforce Code Analyzer plugin (v5)
 
 ```bash
-sf plugins install @salesforce/sfdx-scanner
-sf plugins        # confirm sfdx-scanner is listed
+sf plugins install code-analyzer
+sf plugins                 # confirm "code-analyzer" is listed
+sf code-analyzer rules -r all   # optional: preview the full ruleset
 ```
 
-### 4.6 (Optional) AI provider key
+> OrgLens targets **Salesforce Code Analyzer v5** (`sf code-analyzer`). The
+> legacy v4 `sfdx-scanner` plugin is no longer required.
+
+### 4.6 (Optional) Extra scan engines
+
+OrgLens also plugs in external tools — install any you want and they light up
+automatically in the Engines panel:
+
+```bash
+brew install semgrep    # SAST (JS/TS/Apex, OWASP)
+brew install gitleaks   # secret scanning
+# npm audit ships with Node.js (used automatically for projects with package.json)
+```
+
+### 4.7 (Optional) AI provider key
 
 Set whichever you have:
 
@@ -420,7 +442,8 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 | ------------------------------------------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | "Used lightweight fallback checks" / few findings            | No JDK found, so PMD/Graph Engine couldn't run                     | Install a JDK 11+ (`brew install openjdk@17`). OrgLens auto-detects it — no `JAVA_HOME`/`PATH` setup needed                  |
 | "Unable to locate a Java Runtime" despite Java installed     | macOS `/usr/bin/java` stub shadows the real JDK                    | Fixed automatically — OrgLens probes Homebrew/system/SDKMAN JDKs and injects `JAVA_HOME` for the scanner                    |
-| An engine shows "Not installed"                              | Salesforce Code Analyzer plugin missing                           | `sf plugins install @salesforce/sfdx-scanner` (the engines panel shows the exact command)                                  |
+| A Salesforce engine shows "Not installed"                    | Salesforce Code Analyzer v5 plugin missing                        | `sf plugins install code-analyzer` (the engines panel shows the exact command)                                             |
+| Semgrep / Gitleaks shows "Not installed"                     | External tool not on PATH                                         | `brew install semgrep` / `brew install gitleaks` (the engine card shows the command); npm audit needs a `package.json`     |
 | `orglens: command not found`                                 | `npm link` not run / shell not reloaded                           | Re-run `npm run build && npm link`, open a new terminal                                                                     |
 | UI shows an old version                                      | A stale `orglens ui` server is still running the old build        | `pkill -f "dist/cli.js ui"`, then `npm run build`, restart the server, hard refresh (`Cmd/Ctrl+Shift+R`)                    |
 | No components found                                          | Wrong project path                                                | Pass the project root; OrgLens auto-detects `force-app/main/default` underneath                                            |
@@ -457,13 +480,15 @@ Recommendations are always tied to specific finding IDs to keep them grounded
 
 ### `orglens rules`
 
-List every scan engine and **all** the rules they provide (200+ across PMD,
-ESLint, ESLint-TypeScript, RetireJS, Salesforce Graph Engine, and the built-in
-lightweight engine), each with its default severity and category. Engines that
-aren't installed — or that need Java — are flagged with install directions. Use
-this to decide what to disable or re-prioritize, then feed those choices back
-via `--disable-rules` / `--severity-overrides` / `--engines`, the config file
-(`ruleOverrides`), or the **Rules panel** in the browser UI.
+List every scan engine and **all** the rules they provide (700+ across PMD,
+ESLint, RetireJS, Regex, Copy/Paste Detector, Salesforce Graph Engine, Flow, the
+built-in lightweight engine, plus pluggable adapters like Semgrep, Gitleaks, and
+npm audit), each with its default severity, category, and a **documentation
+link** (sourced from the engine itself, so it deep-links to the exact rule).
+Engines that aren't installed — or that need Java — are flagged with install
+directions. Use this to decide what to disable or re-prioritize, then feed those
+choices back via `--disable-rules` / `--severity-overrides` / `--engines`, the
+config file (`ruleOverrides`), or the **Rules panel** in the browser UI.
 
 | Option     | Default | Description                     |
 | ---------- | ------- | ------------------------------- |
@@ -482,6 +507,26 @@ orglens analyze --repo ./force-app \
 > no `JAVA_HOME` or `PATH` setup required. If no JDK is found, install one with
 > `brew install openjdk@17` (macOS) or from [Adoptium](https://adoptium.net),
 > and OrgLens picks it up automatically.
+
+### Adding a scan engine
+
+OrgLens treats every scanner as a **pluggable adapter**, so its findings are
+normalized into the same severity scale and roll up into one Health Score.
+Built-in adapters: **Semgrep**, **Gitleaks**, and **npm audit** (install each
+with `brew install semgrep`, `brew install gitleaks`; npm ships with Node.js).
+Engines that aren't installed are listed with install directions and skipped —
+they never fail a run.
+
+To add a new tool (e.g. Snyk, CodeQL, SonarQube, OWASP Dependency-Check):
+
+1. Create `src/scanner/adapters/<tool>.ts` implementing the `ScannerAdapter`
+   interface (`detect()`, `isApplicable()`, `run()`, and a `rules()` catalog).
+2. Map the tool's output to `AnalyzerFinding` (use `buildFinding` from
+   `adapters/util.ts` — it infers metadata type/component from the file path).
+3. Register it in `src/scanner/adapters/registry.ts`.
+
+That's it — the engine then shows up in `orglens rules`, the UI Engines panel
+(with install status), the `--engines` selector, and the combined score.
 
 ### `orglens diff`
 
